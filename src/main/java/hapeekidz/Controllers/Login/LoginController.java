@@ -5,12 +5,11 @@ import javax.swing.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
+import hapeekidz.Models.Admin.AdminModel;
 import hapeekidz.Models.Login.Admin;
+import hapeekidz.Views.Admin.AdminView;
 import hapeekidz.Views.Login.LoginView;
-
-import hapeekidz.Models.Dashboard.DashboardModel;
-import hapeekidz.Views.Dashboard.TabbedPanelView;
-import hapeekidz.Controllers.Dashboard.DashboardController;
+import hapeekidz.Controllers.Admin.AdminController;
 
 
 public class LoginController implements ActionListener{
@@ -35,10 +34,15 @@ public class LoginController implements ActionListener{
         Authenticated = model.Authenticate(username, password);
 
         if (Authenticated) {
-            view.dispose();
-            TabbedPanelView dashboardView = new TabbedPanelView();
-            DashboardModel dashboardModel = new DashboardModel();
-            DashboardController dashboardController = new DashboardController();
+            if (model.getAccessLevel().equals("admin")){
+                view.dispose();
+                AdminModel dashboardModel = new AdminModel();
+                AdminView dashboardView = new AdminView();
+                AdminController dashboardController = new AdminController(dashboardModel, dashboardView);
+            }
+            else {
+                JOptionPane.showMessageDialog(null, "Access Level Moments: " + model.getAccessLevel(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         } 
         
         else {

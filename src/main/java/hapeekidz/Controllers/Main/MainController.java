@@ -9,27 +9,15 @@ import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import hapeekidz.Controllers.Login.LoginController;
 import hapeekidz.Models.Login.Admin;
+import hapeekidz.Views.Admin.AdminView;
 import hapeekidz.Views.Login.LoginView;
-
-import hapeekidz.Views.Dashboard.TabbedPanelView;
 
 public class MainController {
     public static void main(String[] args) {
         setLookAndFeel();
         EventQueue.invokeLater(() -> {
-            // Admin model = retrieveAdminFromDataBase();
-            // LoginView view = new LoginView();
-            // LoginController controller = new LoginController(model, view);
-            new TabbedPanelView();
+            new LoginController(new Admin(), new LoginView());
         });
-    }
-
-    public static Admin retrieveAdminFromDataBase() {
-        Admin model = new Admin();
-        model.setUsername("admin");
-        model.setPassword("admin");
-        model.setRole("admin");
-        return model;
     }
 
     public static void setLookAndFeel() {

@@ -1,4 +1,4 @@
-package hapeekidz.Views.Dashboard;
+package hapeekidz.Views.Admin;
 
 import java.awt.*;
 import javax.swing.*;
@@ -8,16 +8,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.formdev.flatlaf.extras.components.FlatTabbedPane.TabAlignment;
-
 import net.miginfocom.swing.MigLayout;
 
-public class TabbedPanelView extends JFrame {
+public class AdminView extends JFrame {
 
     JPanel body = new JPanel();
 
     private void init() {
-        setTitle("Login Page");
+        setTitle("Admin View");
         setSize(new Dimension(1200, 700));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -25,7 +23,7 @@ public class TabbedPanelView extends JFrame {
         this.add(GroupedPanel());
     }
 
-    public TabbedPanelView() {
+    public AdminView() {
         init();
     }
 
@@ -36,6 +34,10 @@ public class TabbedPanelView extends JFrame {
         panel.add(navigator);
         panel.add(body, "grow");
         return panel;
+    }
+
+    public void logout() {
+        JOptionPane.showMessageDialog(null, "Do you want to logout");
     }
 
     public void showPanel(String strComponent) {
@@ -55,59 +57,19 @@ public class TabbedPanelView extends JFrame {
 
 }
 
-class DashboardPanel extends JPanel {
-    public DashboardPanel() {
-        setBackground(Color.red);
-        setPreferredSize(new Dimension(100, 100));
-    }
-}
-
-class InvoicesPanel extends JPanel {
-    public InvoicesPanel() {
-        setBackground(Color.blue);
-        setPreferredSize(new Dimension(100, 100));
-    }
-}
-
-class CustomerPanel extends JPanel {
-    public CustomerPanel() {
-        setBackground(Color.green);
-        setPreferredSize(new Dimension(100, 100));
-    }
-}
-
-class ProductsPanel extends JPanel {
-    public ProductsPanel() {
-        setBackground(Color.yellow);
-        setPreferredSize(new Dimension(100, 100));
-    }
-}
-
-class SecurityPanel extends JPanel {
-    public SecurityPanel() {
-        setBackground(Color.orange);
-        setPreferredSize(new Dimension(100, 100));
-    }
-}
-
-class LogoutPanel extends JPanel {
-    public LogoutPanel() {
-        JOptionPane.showMessageDialog(null, "Insert Logout Function");
-    }
-}
-
 class Navigator extends JComponent {
-    private TabbedPanelView view;
-    /*
-     * Temporary Action Listener, should be in Controller
-     * TODO: Move to Controller
-     */
+    private AdminView view;
     ActionListener listener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (e.getSource() instanceof JButton) {
                 String text = (((JButton) e.getSource()).getText()).split(" ")[0];
-                view.showPanel("hapeekidz.Views.Dashboard." + text + "Panel");
+                if(text == "Logout"){
+                    view.logout();
+                }
+                else {
+                    view.showPanel("hapeekidz.Views.Admin." + text + "View");
+                }
             }
         }
     };
@@ -115,7 +77,7 @@ class Navigator extends JComponent {
     private String[] links = {
             "Dashboard",
             "Invoices & Sales",
-            "Customer",
+            "Customers",
             "Products & Services",
             "Security & Backup",
             "Logout"
@@ -132,17 +94,13 @@ class Navigator extends JComponent {
         }
     }
 
-    public Navigator(TabbedPanelView view) {
+    public Navigator(AdminView view) {
         this.view = view;
         init();
     }
 
     private void addNavigation(String name, int index) {
         NavigationItem item = new NavigationItem(name, index);
-        /*
-         * Temporary Action Listener, should be in Controller
-         * TODO: Move to Controller
-         */
         item.addActionListener(listener);
         add(item);
         revalidate();

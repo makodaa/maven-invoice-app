@@ -1,40 +1,66 @@
 package hapeekidz.Models.Login;
 
+import java.sql.*;
+
 public class Admin {
+    Connection con;
+    PreparedStatement pst;
+    ResultSet rs;
+
     private String username;
     private String password;
-    private String role;
+    private String accessLevel;
     boolean Authenticated = false;
 
     public Admin() {
     }
-    public Admin(String username, String password, String role) {
-        this.username = username;
-        this.password = password;
-        this.role = role;
-    }
+
     public String getUsername() {
         return this.username;
     }
+
     public String getPassword() {
         return this.password;
     }
-    public String getRole() {
-        return this.role;
+
+    public String getAccessLevel() {
+        return this.accessLevel;
     }
+
     public void setUsername(String username) {
         this.username = username;
     }
+
     public void setPassword(String password) {
         this.password = password;
     }
-    public void setRole(String role) {
-        this.role = role;
+
+    public void setAccessLevel(String role) {
+        this.accessLevel = role;
     }
+
     public boolean Authenticate(String username, String password) {
-        if (username.equals(this.username) && password.equals(this.password)) {
-            this.Authenticated = true;
+        this.username = username;
+        this.password = password;
+
+        try {
+            con = DriverManager.getConnection(
+                    "jdbc:mysql://127.0.0.1:3306",
+                    "root",
+                    "MkbcMySQL2023-");
+            pst = con.prepareStatement("SELECT * FROM PROJ.USERS WHERE username = ? AND password = ?");
+            pst.setString(1, username);
+            pst.setString(2, password);
+            rs = pst.executeQuery();
+
+            if (rs.next()) {
+                this.accessLevel = rs.getString("accesslevel");
+                this.Authenticated = true;
+            }
+        } catch (Exception e) {
+            System.out.println(e);
         }
+
         return this.Authenticated;
     }
 }
