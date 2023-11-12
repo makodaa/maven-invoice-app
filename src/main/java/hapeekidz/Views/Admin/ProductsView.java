@@ -12,10 +12,10 @@ import net.miginfocom.swing.MigLayout;
 
 public class ProductsView extends JPanel {
     public ProductsView() {
-        setLayout(new MigLayout("wrap 1, fill, insets 0", "", ""));
+        setLayout(new MigLayout("wrap 1, fillx, gapx 0, insets 0", "", ""));
         setBackground(Color.red);
         add(addWindowHeader(), "growx, left"); 
-        add(addControlInterfacePanel(), "growx"); 
+        add(addControlInterfacePanel(), "growx, growy"); 
     }
     private JComponent addWindowHeader(){
         JPanel panel = new JPanel(new MigLayout("insets 0, gapx 0", "", ""));
