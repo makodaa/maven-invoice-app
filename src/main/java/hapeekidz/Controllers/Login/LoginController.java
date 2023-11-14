@@ -5,19 +5,19 @@ import javax.swing.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-import hapeekidz.Models.Admin.AdminModel;
-import hapeekidz.Models.Login.Admin;
-import hapeekidz.Views.Admin.AdminView;
+import hapeekidz.Controllers.App.AppController;
+import hapeekidz.Models.App.Products;
+import hapeekidz.Models.Login.Admins;
+import hapeekidz.Views.App.AppView;
 import hapeekidz.Views.Login.LoginView;
-import hapeekidz.Controllers.Admin.AdminController;
 
 
 public class LoginController implements ActionListener{
-    private Admin model;
+    private Admins model;
     private LoginView view;
     private JButton cmdLogin;
 
-    public LoginController(Admin model, LoginView view) {
+    public LoginController(Admins model, LoginView view) {
         this.model = model;
         this.view = view;
         this.cmdLogin = view.getCmdLogin();
@@ -36,9 +36,9 @@ public class LoginController implements ActionListener{
         if (Authenticated) {
             if (model.getAccessLevel().equals("admin")){
                 view.dispose();
-                AdminModel dashboardModel = new AdminModel();
-                AdminView dashboardView = new AdminView();
-                AdminController dashboardController = new AdminController(dashboardModel, dashboardView);
+                Products dashboardModel = new Products();
+                AppView dashboardView = new AppView();
+                AppController dashboardController = new AppController(dashboardModel, dashboardView);
             }
             else {
                 JOptionPane.showMessageDialog(null, "Access Level Moments: " + model.getAccessLevel(), "Error", JOptionPane.ERROR_MESSAGE);

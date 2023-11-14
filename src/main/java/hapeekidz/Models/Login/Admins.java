@@ -2,7 +2,7 @@ package hapeekidz.Models.Login;
 
 import java.sql.*;
 
-public class Admin {
+public class Admins {
     Connection con;
     PreparedStatement pst;
     ResultSet rs;
@@ -12,7 +12,7 @@ public class Admin {
     private String accessLevel;
     boolean Authenticated = false;
 
-    public Admin() {
+    public Admins() {
     }
 
     public String getUsername() {
@@ -48,13 +48,13 @@ public class Admin {
                     "jdbc:mysql://127.0.0.1:3306",
                     "root",
                     "MkbcMySQL2023-");
-            pst = con.prepareStatement("SELECT * FROM PROJ.USERS WHERE username = ? AND password = ?");
+            pst = con.prepareStatement("SELECT * FROM SYS.USERS WHERE USERS_USERNAME = ? AND USERS_PASSWORD = ?");
             pst.setString(1, username);
             pst.setString(2, password);
             rs = pst.executeQuery();
 
             if (rs.next()) {
-                this.accessLevel = rs.getString("accesslevel");
+                this.accessLevel = rs.getString("USERS_ACCESS_LEVEL");
                 this.Authenticated = true;
             }
         } catch (Exception e) {

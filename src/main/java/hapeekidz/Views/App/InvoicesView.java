@@ -1,4 +1,4 @@
-package hapeekidz.Views.Admin;
+package hapeekidz.Views.App;
 
 import java.awt.*;
 import javax.swing.*;

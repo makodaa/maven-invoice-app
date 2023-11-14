@@ -1,4 +1,4 @@
-package hapeekidz.Views.Admin;
+package hapeekidz.Views.App;
 
 import java.awt.*;
 import javax.swing.*;
@@ -13,12 +13,12 @@ import java.awt.event.ActionListener;
 import com.formdev.flatlaf.FlatClientProperties;
 import net.miginfocom.swing.MigLayout;
 
-public class AdminView extends JFrame {
+public class AppView extends JFrame {
 
     JPanel body = new JPanel(new MigLayout("fill, insets 0", "", ""));
 
     private void init() {
-        setTitle("Admin View");
+        setTitle("Invoice System");
         setSize(new Dimension(1200, 700));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -26,7 +26,7 @@ public class AdminView extends JFrame {
         this.add(GroupedPanel());
     }
 
-    public AdminView() {
+    public AppView() {
         init();
     }
 
@@ -35,6 +35,7 @@ public class AdminView extends JFrame {
         Navigator navigator = new Navigator(this);
         panel.add(navigator);
         body.add(new DashboardView(), "grow");
+        setTitle("Dashboard");
         panel.add(body, "grow");
         return panel;
     }
@@ -43,7 +44,7 @@ public class AdminView extends JFrame {
         JOptionPane.showMessageDialog(null, "Do you want to logout");
     }
 
-    public void showPanel(String strComponent) {
+    public void showPanel(String strComponent, String strWindow) {
         Object sameClassObject = null;
         try {
             Class<?> cls = Class.forName(strComponent);
@@ -56,12 +57,13 @@ public class AdminView extends JFrame {
         body.add((Component)sameClassObject, "grow");
         body.revalidate();
         body.repaint();
+        this.setTitle(strWindow);
     }
 
 }
 
 class Navigator extends JComponent {
-    private AdminView view;
+    private AppView view;
     ActionListener listener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -71,7 +73,7 @@ class Navigator extends JComponent {
                     view.logout();
                 }
                 else {
-                    view.showPanel("hapeekidz.Views.Admin." + text + "View");
+                    view.showPanel("hapeekidz.Views.App." + text + "View", text);
                 }
             }
         }
@@ -99,26 +101,17 @@ class Navigator extends JComponent {
         }
     }
 
-    public Navigator(AdminView view) {
+    public Navigator(AppView view) {
         this.view = view;
         init();
     }
 
     private Icon getIcon(int index){
-        Dictionary<Integer,String> dict = new Hashtable<Integer,String>();
-        dict.put(0, "Dashboard");
-        dict.put(1, "Invoices");
-        dict.put(2, "Customers");
-        dict.put(3, "Products");
-        dict.put(4, "Security");
-        dict.put(5, "Logout");
-        URL url = getClass().getResource("/hapeekidz/assets/icons/" + dict.get(index) + ".png");
-        System.out.println(url);
+        String[] arr = {"Dashboard", "Invoices", "Customers", "Products", "Security", "Logout"};
+        URL url = getClass().getResource("/hapeekidz/assets/icons/" + arr[index] + ".png");
         if (url != null) {
             return new ImageIcon(new ImageIcon(url).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH));
         } else {
-            // TODO:
-            System.out.println("Oh no, thats not gud");
             return null;    
         }
     }
