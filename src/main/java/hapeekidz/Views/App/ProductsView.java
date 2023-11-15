@@ -8,6 +8,10 @@ import javax.swing.table.TableCellRenderer;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.MouseEvent;
 import com.formdev.flatlaf.FlatClientProperties;
 
 import hapeekidz.Models.App.Products;
@@ -17,12 +21,13 @@ public class ProductsView extends JPanel implements ActionListener {
     private JButton cmdAdd, cmdCancel, cmdConfirm;
     private JTable table;
     private Products model = new Products();
+    private JComponent cardPanel = new JPanel(new CardLayout());
 
     @Override
     public void actionPerformed(ActionEvent e) {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         if (e.getSource() == cmdAdd) {
-            frame.setContentPane(addProductPanel());
+            addProductPanel();
         }
         if (e.getSource() == cmdCancel || e.getSource() == cmdConfirm) {
             frame.setContentPane(new AppView());
@@ -42,7 +47,6 @@ public class ProductsView extends JPanel implements ActionListener {
         add(ControlPanel(), "growx, growy");
         add(addTablePanel(), "growx, growy");
     }
-
 
     private JComponent WindowHeader() {
         JPanel panel = new JPanel(new MigLayout("insets 0, gapx 0", "", ""));
@@ -154,12 +158,35 @@ public class ProductsView extends JPanel implements ActionListener {
         }
     }
 
-    private JComponent addProductPanel() {
-        JPanel panel = new JPanel();
-        return panel;
-
+    private void addProductPanel() {
+        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        JPanel glassPane = new JPanel(null);
+        frame.setGlassPane(glassPane);
+        glassPane.add(cardPanel);
+        glassPane.setVisible(true);
+        cardPanel.setSize(frame.getContentPane().getSize());
+        cardPanel.setBounds(0, 0, frame.getContentPane().getWidth(), frame.getContentPane().getHeight());
+        glassPane.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+            }
+        });
+        frame.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    cardPanel.setSize(frame.getContentPane().getSize());
+                    cardPanel.revalidate();
+                    cardPanel.repaint();
+                });
+            }
+        });
     }
-
+    /*
+     * adjustData() reassigns data for table display
+     * param: { "id", "name", "description", "category", "price", "SKU", "is_taxable",}
+     * return: { "name", "category", "price", "is_taxable", "action"}
+    */
     private Object[][] adjustData(Object[][] data) {
         Object[][] newData = new Object[data.length][data[0].length + 1];
         for (int i = 0; i < data.length; i++) {

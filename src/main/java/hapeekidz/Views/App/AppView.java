@@ -30,12 +30,16 @@ public class AppView extends JFrame {
         init();
     }
 
+    public AppView(String current) {
+        init();
+        showPanel("hapeekidz.Views.App." + current + "View", current);
+        setTitle(current);
+    }
+
     private Component GroupedPanel() {
         JPanel panel = new JPanel(new MigLayout("insets 0 10 0 0, gapx 0", "[][grow]", "grow"));
         Navigator navigator = new Navigator(this);
         panel.add(navigator);
-        body.add(new DashboardView(), "grow");
-        setTitle("Dashboard");
         panel.add(body, "grow");
         return panel;
     }
