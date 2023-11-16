@@ -13,9 +13,41 @@ import java.awt.event.ActionListener;
 import com.formdev.flatlaf.FlatClientProperties;
 import net.miginfocom.swing.MigLayout;
 
-public class AppView extends JFrame {
+public class AppView extends JFrame implements ActionListener{
 
+    /*
+     * Implemented Methods
+    */
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() instanceof JButton) {
+            String text = (((JButton) e.getSource()).getText()).split(" ")[0];
+            if (text == "Logout") {
+                logout();
+            } else {
+                showPanel("hapeekidz.Views.App." + text + "View", text);
+            }
+        }
+    }
+
+    /*
+     * AppView Fields
+    */
+    
     JPanel body = new JPanel(new MigLayout("fill, insets 0", "", ""));
+    private String[] links = {
+            "Dashboard",
+            "Invoices & Sales",
+            "Customers",
+            "Products & Services",
+            "Security & Backup",
+            "Logout"
+    };
+
+    /*
+     * AppView Methods
+    */
 
     private void init() {
         setTitle("Invoice System");
@@ -38,8 +70,7 @@ public class AppView extends JFrame {
 
     private Component GroupedPanel() {
         JPanel panel = new JPanel(new MigLayout("insets 0 10 0 0, gapx 0", "[][grow]", "grow"));
-        Navigator navigator = new Navigator(this);
-        panel.add(navigator);
+        panel.add(navBar());
         panel.add(body, "grow");
         return panel;
     }
@@ -58,101 +89,86 @@ public class AppView extends JFrame {
             e.printStackTrace();
         }
         body.removeAll();
-        body.add((Component)sameClassObject, "grow");
+        body.add((Component) sameClassObject, "grow");
         body.revalidate();
         body.repaint();
         this.setTitle(strWindow);
     }
 
-}
-
-class Navigator extends JComponent {
-    private AppView view;
-    ActionListener listener = new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (e.getSource() instanceof JButton) {
-                String text = (((JButton) e.getSource()).getText()).split(" ")[0];
-                if(text == "Logout"){
-                    view.logout();
-                }
-                else {
-                    view.showPanel("hapeekidz.Views.App." + text + "View", text);
-                }
-            }
-        }
-    };
-
-    private String[] links = {
-            "Dashboard",
-            "Invoices & Sales",
-            "Customers",
-            "Products & Services",
-            "Security & Backup",
-            "Logout"
-    };
-
-    private void init() {
-        setLayout(new MigLayout(
-            "fill, gapy 0, wrap 1, insets 0","",""));
+    private JComponent navBar() {
+        JPanel panel = new JPanel(new MigLayout(
+                "fill, gapy 0, wrap 1, insets 0", "", ""));
         JLabel lblTitle = new JLabel("Rental Services System");
-        lblTitle.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/hapeekidz/assets/icons/logo.png")).getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
+        lblTitle.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/hapeekidz/assets/icons/logo.png"))
+                .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
         lblTitle.putClientProperty(FlatClientProperties.STYLE, "" +
                 "font:bold +4");
-        add(lblTitle);
+        panel.add(lblTitle);
         for (int i = 0; i < links.length; i++) {
-            addNavigation(links[i], i);
+            addNavigation(panel, links[i], i);
         }
+        return panel;
     }
 
-    public Navigator(AppView view) {
-        this.view = view;
-        init();
-    }
-
-    private Icon getIcon(int index){
-        String[] arr = {"Dashboard", "Invoices", "Customers", "Products", "Security", "Logout"};
+    private Icon getIcon(int index) {
+        String[] arr = { "Dashboard", "Invoices", "Customers", "Products", "Security", "Logout" };
         URL url = getClass().getResource("/hapeekidz/assets/icons/" + arr[index] + ".png");
         if (url != null) {
             return new ImageIcon(new ImageIcon(url).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH));
         } else {
-            return null;    
+            return null;
         }
     }
 
-    private void addNavigation(String name, int index) {
+    private void addNavigation(JPanel paramPanel, String name, int index) {
+        JPanel panel = paramPanel;
         NavigationItem item = new NavigationItem(name, index);
         Icon icon = getIcon(index);
         if (icon != null) {
             item.setIcon(icon);
         }
-        item.addActionListener(listener);
-        add(item);
-        revalidate();
-        repaint();
-    }
-}
-
-class NavigationItem extends JButton {
-    private int index;
-
-    public NavigationItem(String name, int index) {
-        super(name);
-        this.index = index;
-        setForeground(Color.BLACK);
-        setHorizontalAlignment(SwingConstants.LEFT);
-        setBackground(new Color(0,0,0, 3));
-        setBorder(new EmptyBorder(9, 3, 9, 10));
-        setIconTextGap(10);
-        setPreferredSize(new Dimension(250, 70));
+        // TODO: add action listener
+        item.addActionListener(this);
+        panel.add(item);
+        panel.revalidate();
+        panel.repaint();
     }
 
-    public int getIndex() {
-        return index;
-    }
+    ActionListener listener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (e.getSource() instanceof JButton) {
+                String text = (((JButton) e.getSource()).getText()).split(" ")[0];
+                if (text == "Logout") {
+                    logout();
+                } else {
+                    showPanel("hapeekidz.Views.App." + text + "View", text);
+                }
+            }
+        }
+    };
 
-    public void setIndex(int index) {
-        this.index = index;
-    }
+    class NavigationItem extends JButton {
+        private int index;
 
+        public NavigationItem(String name, int index) {
+            super(name);
+            this.index = index;
+            setForeground(Color.BLACK);
+            setHorizontalAlignment(SwingConstants.LEFT);
+            setBackground(new Color(0, 0, 0, 3));
+            setBorder(new EmptyBorder(9, 3, 9, 10));
+            setIconTextGap(10);
+            setPreferredSize(new Dimension(250, 70));
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public void setIndex(int index) {
+            this.index = index;
+        }
+
+    }
 }
