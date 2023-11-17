@@ -4,7 +4,6 @@ import java.awt.*;
 import javax.swing.*;
 import java.lang.reflect.*;
 import java.net.URL;
-import java.util.*;
 
 import javax.swing.border.EmptyBorder;
 import java.awt.event.ActionEvent;
@@ -34,7 +33,6 @@ public class AppView extends JFrame implements ActionListener{
     /*
      * AppView Fields
     */
-    
     JPanel body = new JPanel(new MigLayout("fill, insets 0", "", ""));
     private String[] links = {
             "Dashboard",
@@ -56,16 +54,11 @@ public class AppView extends JFrame implements ActionListener{
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
         this.add(GroupedPanel());
+        showPanel("hapeekidz.Views.App.DashboardView", "Dashboard");
     }
 
     public AppView() {
         init();
-    }
-
-    public AppView(String current) {
-        init();
-        showPanel("hapeekidz.Views.App." + current + "View", current);
-        setTitle(current);
     }
 
     private Component GroupedPanel() {
@@ -146,7 +139,9 @@ public class AppView extends JFrame implements ActionListener{
                 }
             }
         }
-    };
+
+};
+}
 
     class NavigationItem extends JButton {
         private int index;
@@ -171,4 +166,4 @@ public class AppView extends JFrame implements ActionListener{
         }
 
     }
-}
+

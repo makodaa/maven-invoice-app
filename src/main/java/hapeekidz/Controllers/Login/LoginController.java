@@ -36,7 +36,7 @@ public class LoginController implements ActionListener{
         if (Authenticated) {
             if (model.getAccessLevel().equals("admin")){
                 view.dispose();
-                new AppController(new Products(), new AppView("Dashboard"));
+                new AppController(new Products(), new AppView());
             }
             else {
                 JOptionPane.showMessageDialog(null, "Access Level Moments: " + model.getAccessLevel(), "Error", JOptionPane.ERROR_MESSAGE);

@@ -7,6 +7,7 @@ import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.fonts.roboto.FlatRobotoFont;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
+import hapeekidz.Controllers.App.AppController;
 import hapeekidz.Controllers.Login.LoginController;
 import hapeekidz.Models.Login.Admins;
 import hapeekidz.Views.App.AppView;
@@ -17,7 +18,7 @@ public class MainController {
         setLookAndFeel();
         EventQueue.invokeLater(() -> {
             // new LoginController(new Admins(), new LoginView());
-            new AppView("Dashboard");
+            new AppView();
         });
     }
 
