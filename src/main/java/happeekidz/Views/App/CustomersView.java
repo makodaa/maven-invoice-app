@@ -9,7 +9,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.sql.Date;
 import java.time.LocalDate;
 
 import net.miginfocom.swing.MigLayout;
@@ -21,24 +20,29 @@ import javax.swing.table.TableCellRenderer;
 import com.github.lgooddatepicker.components.DatePicker;
 import com.github.lgooddatepicker.components.DatePickerSettings;
 
+import happeekidz.Models.App.Customers;
+
 import com.formdev.flatlaf.FlatClientProperties;
 
 public class CustomersView extends JPanel implements ActionListener, MouseListener {
     private JTable table;
     private JTextField txtFirstName, txtLastName, txtMiddleName, txtAddress,  txtEmail, txtContactNumber;
     private DatePicker calDateStart, calDateEnd;
-    private JButton cmdAdd, cmdCancel, cmdConfirm, cmdBack, cmdExitStack;
-    private JComponent floatingPanel;
+    private JButton cmdAdd, cmdCancel, cmdConfirm, cmdBack, cmdExitStack, cmdUpdate, cmdDelete;
+    private Customers customers = new Customers();
+    int row = 0;
+
 
     
     @Override
     public void mouseClicked(MouseEvent e) {
         int column = table.getColumnModel().getColumnIndexAtX(e.getX());
-        int row    = e.getY()/table.getRowHeight();
+        row    = e.getY()/table.getRowHeight();
 
         System.out.println("Fucking Debugging Moments, row: " + row + " column: " + column);
 
-            if (column == 4) {
+            if (column == 3) {
+                showLayeredPanel(manageCustomerPanel(customers.getCustomers()[row]));
             }
     }
     @Override
@@ -73,15 +77,15 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
             }
         }
         if (e.getSource() == cmdConfirm) {
-            // boolean rs = sendProductsToDatabase();
-            // if (rs) {
+            if (isCustomerAdded()) {
+            JOptionPane.showMessageDialog(frame, "Customer has been added", "Success", JOptionPane.INFORMATION_MESSAGE);
             JPanel glassPane = (JPanel) frame.getGlassPane();
             glassPane.setVisible(false);
             glassPane.removeAll();
             updateFrame(frame);
-            // updateTable();
+            updateTable();
+            }
         }
-        // }
         if (e.getSource() == cmdBack) {
             JPanel panel = (JPanel) cmdBack.getParent().getParent();
             panel.removeAll();
@@ -92,8 +96,32 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
             JPanel glassPane = (JPanel) frame.getGlassPane();
             glassPane.setVisible(false);
             glassPane.removeAll();
+            updateFrame(frame);
         }
-        updateFrame(frame);
+        if (e.getSource() == cmdUpdate) {
+            if(isCustomerUpdated(customers.getCustomers()[row], row)){
+                JOptionPane.showMessageDialog(frame, "Customer has been updated", "Success", JOptionPane.INFORMATION_MESSAGE);
+                JPanel glassPane = (JPanel) frame.getGlassPane();
+                glassPane.setVisible(false);
+                glassPane.removeAll();
+                updateFrame(frame);
+                updateTable();
+            }
+        }
+        if (e.getSource() == cmdDelete) {
+            int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete this customer?", "Delete",
+                    JOptionPane.YES_NO_OPTION);
+            if (rs == JOptionPane.YES_OPTION) {
+                if(isCustomerRemoved(Integer.parseInt(customers.getCustomers()[row][0].toString()))){
+                    JOptionPane.showMessageDialog(frame, "Customer has been deleted", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    JPanel glassPane = (JPanel) frame.getGlassPane();
+                    glassPane.setVisible(false);
+                    glassPane.removeAll();
+                    updateFrame(frame);
+                    updateTable();
+                }
+            }
+        }
     }
 
     public CustomersView() {
@@ -116,6 +144,16 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
     private void updateFrame(JFrame frame) {
         frame.revalidate();
         frame.repaint();
+    }
+
+    private void updateTable() {
+        Object[][] rowdata = customers.getCustomers() == null || customers.getCustomers().length == 0 
+        ? new String[1][4] 
+        : getTableDataOf(customers.getCustomers());
+        String[] columnNames = {"Customer Name", "Sum Payment", "Date Started", "Action"};
+        table.setModel(new DefaultTableModel(rowdata, columnNames));
+        table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
+        table.addMouseListener(this);
     }
 
     private JComponent addWindowHeader() {
@@ -154,7 +192,9 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
     }
 
     private JComponent addTablePanel() {
-        Object[][] rowdata = {{"Johnny Bravo","42069","11/20/23",""}};
+        Object[][] rowdata = customers.getCustomers() == null || customers.getCustomers().length == 0 
+        ? new String[1][4] 
+        : getTableDataOf(customers.getCustomers());
         String[] columnNames = {"Customer Name", "Sum Payment", "Date Started", "Action"};
         
         JPanel panel = new JPanel(new MigLayout("fill, insets 9 10 9 10", "[grow]", "[grow]"));
@@ -171,7 +211,10 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         table.setDefaultRenderer(String.class, centerRenderer);
         table.setDefaultRenderer(Object.class, centerRenderer);
 
-        table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
+        if(rowdata.length > 0){
+            table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
+        }
+
         table.addMouseListener(this);
         
         scrollPane.setViewportView(table);
@@ -219,8 +262,8 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         JPanel panel = new JPanel(new MigLayout("wrap 1, fillx, insets 0", "", ""));
         panel.setBackground(new Color(240, 240, 240));
         panel.add(addFloatingPanelHeader("Add a Customer"), "growx");
-        panel.add(addInputFieldsPanel(new Object[] {"","","","","","",LocalDate.now(),LocalDate.now()}), "growx");
-        panel.add(addControlButtonsPanel(), "right");
+        panel.add(addInputFieldsPanel(new Object[] {"","","","","","","",LocalDate.now(),LocalDate.now()}), "growx");
+        panel.add(addNewCustomerControlButtonsPanel(), "right");
         updateComponents(panel);
         return panel;
     }
@@ -230,7 +273,7 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         panel.setBackground(new Color(240, 240, 240));
         panel.add(addFloatingPanelHeader("Manage Customer"), "growx");
         panel.add(addInputFieldsPanel(data), "growx");
-        panel.add(addControlButtonsPanel(), "right");
+        panel.add(addUpdateCustomerControlButtonsPanel(), "right");
         updateComponents(panel);
         return panel;
     }
@@ -250,36 +293,33 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
     }
 
     private JComponent addInputFieldsPanel(Object[] data) {
-        /* 
-         * 0 - firstName, 1 - lastName, 2 - middleName, 3 - address, 4 - email, 5 - phone, 6 - contractStartDate, 7 - contractEndDate
-        */
 
         JPanel panel = new JPanel(new MigLayout("wrap 2, fill, insets 18 20 18 20", "", ""));
 
-        txtFirstName = newFormTextField("Add First Name", data[0].toString());
+        txtFirstName = newFormTextField("Add First Name", data[1].toString());
         JLabel lblFirstName = newFormLabel("First Name");
 
-        txtLastName = newFormTextField("Add Last Name", data[1].toString());
+        txtLastName = newFormTextField("Add Last Name", data[2].toString());
         JLabel lblLastName = newFormLabel("Last Name");
 
-        txtMiddleName = newFormTextField("Add Middle Name", data[2].toString());
+        txtMiddleName = newFormTextField("Add Middle Name", data[3].toString());
         JLabel lblMiddleName = newFormLabel("Middle Name");
 
-        txtAddress = newFormTextField("Add Address", data[3].toString());
+        txtAddress = newFormTextField("Add Address", data[4].toString());
         JLabel lblAddress = newFormLabel("Address");
 
-        txtEmail = newFormTextField("Add Email", data[4].toString());
+        txtEmail = newFormTextField("Add Email", data[5].toString());
         JLabel lblEmail = newFormLabel("Email");
 
-        txtContactNumber = newFormTextField("Add Contact Number", data[5].toString());
+        txtContactNumber = newFormTextField("Add Contact Number", data[6].toString());
         JLabel lblContactNumber = newFormLabel("Contact Number");
-        //get date from data[6] and data[7
-        calDateStart = newFormDatePicker("Contract Start", (LocalDate) data[6]);
+
+        calDateStart = newFormDatePicker("Contract Start", ((java.sql.Date.valueOf(data[7].toString()))).toLocalDate());
 
         JLabel lblDateStart = newFormLabel("Date Started");
 
-        calDateEnd = newFormDatePicker("Contract End", (LocalDate) data[7]);
-        JLabel lblDateEnd = newFormLabel("Date Ended");
+        calDateEnd = newFormDatePicker("Contract End", ((java.sql.Date.valueOf(data[8].toString()))).toLocalDate());
+        JLabel lblDateEnd = newFormLabel("Due Date");
 
         panel.add(lblFirstName, "growx");
         panel.add(lblLastName, "growx");
@@ -308,13 +348,23 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         return panel;
     }
 
-    private JComponent addControlButtonsPanel() {
+    private JComponent addNewCustomerControlButtonsPanel() {
         JPanel panel = new JPanel(new MigLayout("insets 9 10 9 10", "[][]", ""));
-        cmdCancel = newFormButton("Cancel","arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+        cmdCancel = newFormButton("Cancel","arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
         cmdConfirm = newFormButton("Confirm","arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
         panel.add(cmdCancel, "right, gapx 0");
         panel.add(cmdConfirm, "right, gapx 0");
 
+        return panel;
+    }
+    private JComponent addUpdateCustomerControlButtonsPanel(){
+        JPanel panel = new JPanel(new MigLayout("insets 9 10 9 10", "[][]", ""));
+        cmdDelete = newFormButton("Delete","arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        cmdCancel = newFormButton("Cancel","arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        cmdUpdate = newFormButton("Update","arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+        panel.add(cmdDelete, "right, gapx 0");
+        panel.add(cmdCancel, "right, gapx 0");
+        panel.add(cmdUpdate, "right, gapx 0");
         return panel;
     }
 
@@ -387,5 +437,73 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         datePicker.setDate(setDate);
         return datePicker;
     }
+
+    private Object[][] getTableDataOf(Object[][] data) {
+        Object[][] tableData = new Object[data.length][4];
+        for(int i = 0; i < data.length; i++){
+            tableData[i][0] = data[i][1].toString() + " " + data[i][2].toString();
+            tableData[i][2] = data[i][7];
+        }
+        return tableData;
+    }
+    //method to check if all fields are filled
+    private boolean areFieldsValid(){
+        if(txtFirstName.getText().isEmpty() || txtLastName.getText().isEmpty() || txtMiddleName.getText().isEmpty() || txtAddress.getText().isEmpty() || txtEmail.getText().isEmpty() || txtContactNumber.getText().isEmpty()){
+            JOptionPane.showMessageDialog(this, "Please fill out all fields", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if(calDateStart.getDate().isAfter(calDateEnd.getDate())){
+            JOptionPane.showMessageDialog(this, "Contract start date cannot be after contract end date", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+    private boolean isEntryUnique(){
+        Object[][] data = customers.getCustomers();
+        for(int i = 0; i < data.length; i++){
+            if(data[i][1].toString().equals(txtFirstName.getText()) && data[i][2].toString().equals(txtLastName.getText()) && data[i][3].toString().equals(txtMiddleName.getText()) && data[i][4].toString().equals(txtAddress.getText()) && data[i][5].toString().equals(txtEmail.getText()) && data[i][6].toString().equals(txtContactNumber.getText())){
+                JOptionPane.showMessageDialog(this, txtFirstName.getText() + " " + txtLastName + " already exists", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+        return true;
+    }
+    private boolean isEntryUnique(int id){
+        Object[][] data = customers.getCustomers();
+        for(int i = 0; i < data.length; i++){
+            if(data[i][0].toString().equals(Integer.toString(id))){
+                continue;
+            }
+            if(data[i][1].toString().equals(txtFirstName.getText()) && data[i][2].toString().equals(txtLastName.getText()) && data[i][3].toString().equals(txtMiddleName.getText()) && data[i][4].toString().equals(txtAddress.getText()) && data[i][5].toString().equals(txtEmail.getText()) && data[i][6].toString().equals(txtContactNumber.getText())){
+                JOptionPane.showMessageDialog(this, txtFirstName.getText() + " " + txtLastName + " already exists", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isCustomerAdded(){
+        if(areFieldsValid() && isEntryUnique()){
+            customers.setCustomerToAdd(txtFirstName.getText(), txtLastName.getText(), txtMiddleName.getText(), txtAddress.getText(), txtEmail.getText(), txtContactNumber.getText(), calDateStart.getDate(), calDateEnd.getDate());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isCustomerRemoved(int id){
+        if(id != -1){
+            customers.setCustomerToRemove(id);
+            return true;
+        }
+        return false;
+    }
+    private boolean isCustomerUpdated(Object[] data, int index) {
+        if(areFieldsValid() && isEntryUnique(index)){
+            customers.setCustomerToUpdate(Integer.parseInt(data[0].toString()), txtFirstName.getText(), txtLastName.getText(), txtMiddleName.getText(), txtAddress.getText(), txtEmail.getText(), txtContactNumber.getText(), calDateStart.getDate(), calDateEnd.getDate());
+            return true;
+        }
+        return false;
+    }
+
 }
 

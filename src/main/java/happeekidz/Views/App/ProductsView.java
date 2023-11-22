@@ -35,25 +35,27 @@ import net.miginfocom.swing.MigLayout;
  * - Fecth Field Content from Database
  * - Update Database on Confirmation
 */
-public class ProductsView extends JPanel implements ActionListener, MouseListener{
+public class ProductsView extends JPanel implements ActionListener, MouseListener {
     private JTextField txtName, txtCategory, txtPrice, txtSKU, txtDescription;
     private JCheckBox chkTaxable;
-    private JButton cmdAdd, cmdCancel, cmdConfirm, cmdBack, cmdExitStack, cmdModify, cmdDelete, cmdDummyButton;
+    private JButton cmdAdd, cmdCancel, cmdConfirm, cmdBack, cmdExitStack, cmdModify, cmdDelete;
     private JTable table;
-    private Products model = new Products();
+    private Products products = new Products();
     private JComponent productPanel;
+    private int row = 0;
 
     @Override
     public void mouseClicked(MouseEvent e) {
         int column = table.getColumnModel().getColumnIndexAtX(e.getX());
-        int row    = e.getY()/table.getRowHeight();
+        row = e.getY() / table.getRowHeight();
 
         System.out.println("Fucking Debugging Moments, row: " + row + " column: " + column);
 
-            if (column == 4) {
-                showLayeredPanel(manageProductPanel(model.fetchProductsFromDatabase()[row]));
-            }
+        if (column == 4) {
+            showLayeredPanel(manageProductPanel(products.getProducts()[row]));
+        }
     }
+
     @Override
     public void mousePressed(MouseEvent e) {
     }
@@ -69,7 +71,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
     @Override
     public void mouseExited(MouseEvent e) {
     }
-    
+
     @Override
     public void actionPerformed(ActionEvent e) {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
@@ -86,7 +88,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
             }
         }
         if (e.getSource() == cmdConfirm) {
-            boolean rs = sendAddProductToDatabase();
+            boolean rs = isProdductAdded();
             if (rs) {
                 JPanel glassPane = (JPanel) frame.getGlassPane();
                 glassPane.setVisible(false);
@@ -106,24 +108,13 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
             glassPane.setVisible(false);
             glassPane.removeAll();
         }
-        if (e.getSource() == cmdDummyButton) {
-            if (model.fetchProductsFromDatabase().length == 0) {
-                JOptionPane.showMessageDialog(null, "No products to manage");
-                return;
-            }
-            showLayeredPanel(manageProductPanel(model.fetchProductsFromDatabase()[0]));
-        }
         if (e.getSource() == cmdModify) {
-            int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to modify?", "Modify",
-                    JOptionPane.YES_NO_OPTION);
-            if (rs == JOptionPane.YES_OPTION) {
-                if (sendUpdateProductToDatabase(model.fetchProductsFromDatabase()[0], 0)) {
-                    EventQueue.invokeLater(() -> {
-                        JPanel glassPane = (JPanel) frame.getGlassPane();
-                        glassPane.setVisible(false);
-                        glassPane.removeAll();
-                    });
-                }
+            if (isProductUpdated(products.getProducts()[row], row)) {
+                JOptionPane.showMessageDialog(frame, "Product has been updated", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                JPanel glassPane = (JPanel) frame.getGlassPane();
+                glassPane.setVisible(false);
+                glassPane.removeAll();
                 updateTable();
                 updateFrame(frame);
             }
@@ -132,16 +123,15 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
             int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete?", "Delete",
                     JOptionPane.YES_NO_OPTION);
             if (rs == JOptionPane.YES_OPTION) {
-                sendRemoveProudctToDatabase(model.fetchProductsFromDatabase()[0]);
+                isProductRemoved(products.getProducts()[0]);
                 EventQueue.invokeLater(() -> {
                     JPanel glassPane = (JPanel) frame.getGlassPane();
                     glassPane.setVisible(false);
                     glassPane.removeAll();
                 });
                 updateTable();
-                if (model.fetchProductsFromDatabase().length == 0) {
+                if (products.getProducts().length == 0) {
                     updateFrame(frame);
-                } else {
                 }
             }
         }
@@ -170,14 +160,11 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
     }
 
     private void updateTable() {
-        Object rowData[][] = adjustData(model.fetchProductsFromDatabase()) == null
+        Object rowData[][] = getTableDataOf(products.getProducts()) == null
                 ? new Object[][] { { "", "", "", "", "" } }
-                : adjustData(model.fetchProductsFromDatabase());
+                : getTableDataOf(products.getProducts());
         Object columnNames[] = { "Products / Services", "Category", "Rate", "Taxable", "Action" };
         table.setModel(new DefaultTableModel(rowData, columnNames));
-        table.getColumnModel().getColumn(3).setCellRenderer(new ImageRenderer());
-        table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
-        table.getColumnModel().getColumn(0).setPreferredWidth(107);
     }
 
     private JComponent WindowHeader() {
@@ -204,24 +191,19 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         cmdFilter.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/filter.png"))
                 .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
         cmdFilter.setBorder(new EmptyBorder(0, 0, 0, 0));
-        cmdAdd = newFormButton("Add Product","arc: 5;" +"font: +2;" +"background: #16a34a;" +"foreground: #ffffff;");
-
-        /*
-         * Dummy button iz here
-         */
-        cmdDummyButton = newFormButton("Dummy Button","arc: 5;" +"font: +2;" +"background: #16a34a;" +"foreground: #ffffff;");
+        cmdAdd = newFormButton("Add Product",
+                "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
 
         panel.add(txtSearch, "growx");
         panel.add(cmdFilter, "shrinkx, gapx 10");
         panel.add(cmdAdd, "right");
-        panel.add(cmdDummyButton, "right, gapx 0");
         return panel;
     }
 
     private JComponent addTablePanel() {
-        Object rowData[][] = adjustData(model.fetchProductsFromDatabase()) == null || model.fetchProductsFromDatabase().length == 0
+        Object rowData[][] = getTableDataOf(products.getProducts()) == null || products.getProducts().length == 0
                 ? new Object[][] { { "", "", "", "", "" } }
-                : adjustData(model.fetchProductsFromDatabase());
+                : getTableDataOf(products.getProducts());
         Object columnNames[] = { "Products / Services", "Category", "Rate", "Taxable", "Action" };
 
         JPanel panel = new JPanel(new MigLayout("fill, insets 9 10 9 10", "[grow]", "[grow]"));
@@ -251,15 +233,14 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
 
         return panel;
     }
+
     class ButtonRenderer extends JButton implements TableCellRenderer {
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                int row, int column) {
             setText("Manage Product");
             putClientProperty(FlatClientProperties.STYLE, "" +
-                    "font: -1;" +
                     "foreground: #16a34a;");
-            //set empty border
             setBorder(BorderFactory.createEmptyBorder());
-            //add actionlistener based on row index
 
             return this;
         }
@@ -267,9 +248,10 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
 
     class ImageRenderer extends DefaultTableCellRenderer {
         JLabel label = new JLabel();
-    
+
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                int row, int column) {
             Object columnValue = table.getModel().getValueAt(row, 3);
             // Now you can use columnValue
             if (columnValue instanceof Boolean) {
@@ -303,7 +285,6 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
             public void componentResized(ComponentEvent e) {
                 SwingUtilities.invokeLater(() -> {
                     component.setSize(frame.getContentPane().getSize());
-                    updateComponents(productPanel);
                 });
             }
         });
@@ -355,17 +336,17 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         txtField.putClientProperty(FlatClientProperties.STYLE, "" +
                 "arc: 5;" +
                 "font: +2;");
-        //add client property for red focus
+        // add client property for red focus
 
         txtField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
         txtField.putClientProperty(FlatClientProperties.STYLE, "" +
-        "showClearButton:true");
+                "showClearButton:true");
 
         txtField.setText(setText);
         return txtField;
     }
 
-    private JButton newFormButton (String text, String style) {
+    private JButton newFormButton(String text, String style) {
         JButton btn = new JButton(text);
         btn.setPreferredSize(new Dimension(160, 40));
         btn.addActionListener(this);
@@ -406,7 +387,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
 
         chkTaxable = newFormCheckBox("Taxable");
 
-        txtDescription = newFormTextArea("Sales Description","");
+        txtDescription = newFormTextArea("Sales Description", "");
         JLabel lblDescription = newFormLabel("Sales Description");
 
         panel.add(lblName, "gapy 8");
@@ -429,9 +410,10 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
 
     private JComponent addProductControlButtons() {
         JPanel panel = new JPanel(new MigLayout("insets 9 10 9 10", "[][]", ""));
-        cmdConfirm = newFormButton("Confirm","arc: 5;" +"font: +2;" +"background: #16a34a;" +"foreground: #ffffff;");
+        cmdConfirm = newFormButton("Confirm",
+                "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
 
-        cmdCancel = newFormButton("Cancel","arc: 5;" +"font: +2;" +"background: #475569;" +"foreground: #ffffff;");
+        cmdCancel = newFormButton("Cancel", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
         panel.add(cmdCancel, "right, gapx 0");
         panel.add(cmdConfirm, "right, gapx 0");
 
@@ -446,6 +428,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         updateComponents(panel);
         return panel;
     }
+
     // Refactor this -->
     private JComponent addManageProductPanelHeader() {
         JPanel panel = new JPanel(new MigLayout("insets 0", "", ""));
@@ -485,7 +468,6 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         txtDescription = newFormTextArea("Sales Description", data[2].toString());
         JLabel lblDescription = newFormLabel("Sales Description");
 
-
         panel.add(lblName, "gapy 8");
         panel.add(lblCategory, "gapy 8");
         panel.add(txtName, "growx, gapy 16");
@@ -508,9 +490,9 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
     private JComponent addManageProductControlButtons() {
         JPanel panel = new JPanel(new MigLayout("insets 9 10 9 10", "", ""));
 
-        cmdModify = newFormButton("Modify","arc: 5;" +"font: +2;" +"background: #16a34a;" +"foreground: #ffffff;");
-        cmdDelete = newFormButton("Delete","arc: 5;" +"font: +2;" +"background: #475569;" +"foreground: #ffffff;");
-        cmdCancel = newFormButton("Cancel","arc: 5;" +"font: +2;" +"background: #475569;" +"foreground: #ffffff;");
+        cmdModify = newFormButton("Modify", "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+        cmdDelete = newFormButton("Delete", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        cmdCancel = newFormButton("Cancel", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
 
         panel.add(cmdDelete, "right, gapx 0");
         panel.add(cmdCancel, "right, gapx 0");
@@ -518,15 +500,12 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         return panel;
     }
 
-    private boolean sendAddProductToDatabase() {
+    private boolean isProdductAdded() {
         boolean rs;
         try {
-            rs = checkInvalidFields() && checkDuplicateFields();
-            /*
-             * TODO: Refactor
-             */
+            rs = areFieldsValid() && isEntryUnique();
             if (rs) {
-                model.setAddProduct(txtName.getText(), txtDescription.getText(), txtCategory.getText(),
+                products.setProductToAdd(txtName.getText(), txtDescription.getText(), txtCategory.getText(),
                         Float.parseFloat(txtPrice.getText()), txtSKU.getText(), chkTaxable.isSelected());
                 JOptionPane.showMessageDialog(null, "Product added successfully");
             }
@@ -537,113 +516,89 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         return rs;
     }
 
-    private void sendRemoveProudctToDatabase(Object[] data) {
+    private void isProductRemoved(Object[] data) {
         try {
             int id = Integer.parseInt(data[0].toString());
-            model.setRemoveProduct(id);
+            products.setProductToRemove(id);
         } catch (Exception e) {
         }
     }
 
-    private boolean sendUpdateProductToDatabase(Object[] data, int index) {
-        try {
-            // check if name, category, sku already exists
-            boolean rs = checkInvalidFields() && checkDuplicateFields(index);
+    private boolean isProductUpdated(Object[] data, int index) {
+            boolean rs = areFieldsValid() && isEntryUnique(index);
             if (rs) {
                 int id = Integer.parseInt(data[0].toString());
-                model.setUpdateProduct(id, txtName.getText(), txtDescription.getText(), txtCategory.getText(),
+                products.setProductToUpdate(id, txtName.getText(), txtDescription.getText(), txtCategory.getText(),
                         Float.parseFloat(txtPrice.getText()), txtSKU.getText(), chkTaxable.isSelected());
             }
             return rs;
-        } catch (Exception e) {
-
-        }
-        return true;
     }
 
-    private boolean checkInvalidFields() {
+    private boolean areFieldsValid() {
         if (txtName.getText().isEmpty() || txtCategory.getText().isEmpty() || txtPrice.getText().isEmpty()
                 || txtSKU.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Please fill out all fields");
-            // highlight empty fields
-            if (txtName.getText().isEmpty()) {
-            }
-            if (txtCategory.getText().isEmpty()) {
-            }
-            if (txtPrice.getText().isEmpty()) {
-            }
-            if (txtSKU.getText().isEmpty()) {
-            }
-            return false;
-        }
-        if (txtPrice.getText().equals("0") || txtPrice.getText().equals("0.0")) {
-            JOptionPane.showMessageDialog(null, "Price cannot be 0");
+            JOptionPane.showMessageDialog(null, "Please fill out all fields", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
         if (Float.parseFloat(txtPrice.getText()) < 0 || Float.parseFloat(txtPrice.getText()) < 0.0) {
-            JOptionPane.showMessageDialog(null, "Rate cannot be negative");
+            JOptionPane.showMessageDialog(null, "Rate cannot be negative", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
         return true;
     }
 
-    private boolean checkDuplicateFields() {
-        if (model.fetchProductsFromDatabase() == null || model.fetchProductsFromDatabase().length == 0) {
+    private boolean isEntryUnique() {
+        if (products.getProducts() == null || products.getProducts().length == 0) {
             return true;
         }
-        for (int i = 0; i < model.fetchProductsFromDatabase().length; i++) {
-            if (model.fetchProductsFromDatabase()[i][1].equals(txtName.getText())) {
-                JOptionPane.showMessageDialog(null, txtName.getText() + " already exists in the database");
-                txtName.requestFocus();
+        for (int i = 0; i < products.getProducts().length; i++) {
+            if (products.getProducts()[i][1].equals(txtName.getText())) {
+                JOptionPane.showMessageDialog(null, txtName.getText() + " already exists", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return false;
             }
-            if (model.fetchProductsFromDatabase()[i][5].equals(txtSKU.getText())) {
+            if (products.getProducts()[i][5].equals(txtSKU.getText())) {
                 JOptionPane.showMessageDialog(null,
-                        "An item with the SKU " + txtSKU.getText() + " already exists in the database");
-                txtSKU.requestFocus();
+                        "An item with the SKU " + txtSKU.getText() + " already exists", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return false;
             }
         }
         return true;
     }
 
-    private boolean checkDuplicateFields(int index) {
-        Object[][] arr = model.fetchProductsFromDatabase();
+    private boolean isEntryUnique(int index) {
+        Object[][] arr = products.getProducts();
         if (arr.length == 0) {
             return true;
         }
         for (int i = 0; i < arr.length; i++) {
-            if (i == index) {
+            if(arr[i][0].equals(arr[index][0])) {
                 continue;
             }
             if (arr[i][1].equals(txtName.getText())) {
-                JOptionPane.showMessageDialog(null, txtName.getText() + " already exists in the database");
+                JOptionPane.showMessageDialog(null, txtName.getText() + " already exists");
                 return false;
             }
             if (arr[i][5].equals(txtSKU.getText())) {
                 JOptionPane.showMessageDialog(null,
-                        "An item with the SKU " + txtSKU.getText() + " already exists in the database");
+                        "An item with the SKU " + txtSKU.getText() + " already exists", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return false;
             }
-            int id = Integer.parseInt(arr[i][0].toString());
-            model.setUpdateProduct(id, txtName.getText(), txtDescription.getText(), txtCategory.getText(),
-                    Float.parseFloat(txtPrice.getText()), txtSKU.getText(), chkTaxable.isSelected());
         }
         return true;
     }
 
     /*
-     * adjustData() reassigns data for table display
+     * getTableDataOf() reassigns data for table display
      * param: { "id", "name", "description", "category", "price", "SKU",
      * "is_taxable",}
      * return: { "name", "category", "price", "is_taxable", "action"}
      * TODO: alter 5th column
      */
-    private Object[][] adjustData(Object[][] data) {
+    private Object[][] getTableDataOf(Object[][] data) {
         Object[][] arr = new Object[data.length][5];
-        if (data == null || data.length == 0) {
-            return null;
-        }
         for (int i = 0; i < data.length; i++) {
             arr[i][0] = data[i][1]; // name
             arr[i][1] = data[i][3]; // category
