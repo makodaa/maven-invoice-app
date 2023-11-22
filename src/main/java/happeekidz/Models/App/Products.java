@@ -4,7 +4,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JOptionPane;
 
 public class Products {
     Connection con;
@@ -34,7 +33,6 @@ public class Products {
             pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS happeekidz.products (ID_PRODUCTS INT NOT NULL AUTO_INCREMENT, PRODUCT_NAME VARCHAR(255) NOT NULL, PRODUCT_DESCRIPTION VARCHAR(255) NOT NULL, PRODUCT_CATEGORY VARCHAR(255) NOT NULL, PRODUCT_RATE FLOAT NOT NULL, PRODUCT_SKU VARCHAR(255) NOT NULL, PRODUCT_IS_TAXABLE BOOLEAN NOT NULL, PRIMARY KEY (ID_PRODUCTS))");
             pst.executeUpdate();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "1" + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -75,7 +73,6 @@ public class Products {
             pst.setBoolean(6, is_taxable);
             pst.executeUpdate();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
             e.printStackTrace();
         } finally {
             // Close resources in a finally block
@@ -98,9 +95,7 @@ public class Products {
             pst.setBoolean(6, is_taxable);
             pst.setInt(7, id);
             pst.executeUpdate();
-            JOptionPane.showMessageDialog(null, "Product Updated Successfully");
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
             e.printStackTrace();
         } finally {
             // Close resources in a finally block
@@ -117,9 +112,7 @@ public class Products {
             pst = con.prepareStatement("DELETE FROM happeekidz.products WHERE ID_PRODUCTS = ?");
             pst.setInt(1, id);
             pst.executeUpdate();
-            JOptionPane.showMessageDialog(null, "Product Removed Successfully");
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
             e.printStackTrace();
         } finally {
             // Close resources in a finally block
@@ -156,7 +149,6 @@ public class Products {
             data = dataList.toArray(new Object[0][]);
 
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
             e.printStackTrace();
             data = new Object[0][0];
         } finally {

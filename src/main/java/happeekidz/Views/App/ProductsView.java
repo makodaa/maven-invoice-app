@@ -3,6 +3,7 @@ package happeekidz.Views.App;
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
@@ -13,6 +14,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.json.ParseException;
 
@@ -32,7 +35,7 @@ import net.miginfocom.swing.MigLayout;
  * - Fecth Field Content from Database
  * - Update Database on Confirmation
 */
-public class ProductsView extends JPanel implements ActionListener {
+public class ProductsView extends JPanel implements ActionListener, MouseListener{
     private JTextField txtName, txtCategory, txtPrice, txtSKU, txtDescription;
     private JCheckBox chkTaxable;
     private JButton cmdAdd, cmdCancel, cmdConfirm, cmdBack, cmdExitStack, cmdModify, cmdDelete, cmdDummyButton;
@@ -41,10 +44,37 @@ public class ProductsView extends JPanel implements ActionListener {
     private JComponent productPanel;
 
     @Override
+    public void mouseClicked(MouseEvent e) {
+        int column = table.getColumnModel().getColumnIndexAtX(e.getX());
+        int row    = e.getY()/table.getRowHeight();
+
+        System.out.println("Fucking Debugging Moments, row: " + row + " column: " + column);
+
+            if (column == 4) {
+                showLayeredPanel(manageProductPanel(model.fetchProductsFromDatabase()[row]));
+            }
+    }
+    @Override
+    public void mousePressed(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+    }
+    
+    @Override
     public void actionPerformed(ActionEvent e) {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         if (e.getSource() == cmdAdd) {
-            showProductPanel(addProductPanel());
+            showLayeredPanel(addProductPanel());
         }
         if (e.getSource() == cmdCancel) {
             int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to cancel?", "Cancel",
@@ -56,7 +86,7 @@ public class ProductsView extends JPanel implements ActionListener {
             }
         }
         if (e.getSource() == cmdConfirm) {
-            boolean rs = sendProductsToDatabase();
+            boolean rs = sendAddProductToDatabase();
             if (rs) {
                 JPanel glassPane = (JPanel) frame.getGlassPane();
                 glassPane.setVisible(false);
@@ -81,7 +111,7 @@ public class ProductsView extends JPanel implements ActionListener {
                 JOptionPane.showMessageDialog(null, "No products to manage");
                 return;
             }
-            showProductPanel(manageProductPanel(model.fetchProductsFromDatabase()[0]));
+            showLayeredPanel(manageProductPanel(model.fetchProductsFromDatabase()[0]));
         }
         if (e.getSource() == cmdModify) {
             int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to modify?", "Modify",
@@ -109,7 +139,7 @@ public class ProductsView extends JPanel implements ActionListener {
                     glassPane.removeAll();
                 });
                 updateTable();
-                if (model.fetchProductsFromDatabase().length > 1) {
+                if (model.fetchProductsFromDatabase().length == 0) {
                     updateFrame(frame);
                 } else {
                 }
@@ -145,8 +175,8 @@ public class ProductsView extends JPanel implements ActionListener {
                 : adjustData(model.fetchProductsFromDatabase());
         Object columnNames[] = { "Products / Services", "Category", "Rate", "Taxable", "Action" };
         table.setModel(new DefaultTableModel(rowData, columnNames));
+        table.getColumnModel().getColumn(3).setCellRenderer(new ImageRenderer());
         table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
-        table.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox()));
         table.getColumnModel().getColumn(0).setPreferredWidth(107);
     }
 
@@ -174,29 +204,12 @@ public class ProductsView extends JPanel implements ActionListener {
         cmdFilter.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/filter.png"))
                 .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
         cmdFilter.setBorder(new EmptyBorder(0, 0, 0, 0));
-        cmdAdd = new JButton("Add a Product");
-        cmdAdd.setPreferredSize(new Dimension(160, 40));
-        cmdAdd.addActionListener(this);
-        cmdAdd.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_BORDERLESS);
-        cmdAdd.putClientProperty(FlatClientProperties.STYLE, "" +
-                "arc: 5;" +
-                "font: +2;" +
-                "background: #16a34a;" +
-                "foreground: #ffffff;");
+        cmdAdd = newFormButton("Add Product","arc: 5;" +"font: +2;" +"background: #16a34a;" +"foreground: #ffffff;");
 
         /*
          * Dummy button iz here
          */
-        cmdDummyButton = new JButton("Manage Product");
-        cmdDummyButton.setPreferredSize(new Dimension(160, 40));
-        cmdDummyButton.addActionListener(this);
-        cmdDummyButton.putClientProperty(FlatClientProperties.BUTTON_TYPE,
-                FlatClientProperties.BUTTON_TYPE_BORDERLESS);
-        cmdDummyButton.putClientProperty(FlatClientProperties.STYLE, "" +
-                "arc: 5;" +
-                "font: +2;" +
-                "background: #475569;" +
-                "foreground: #ffffff;");
+        cmdDummyButton = newFormButton("Dummy Button","arc: 5;" +"font: +2;" +"background: #16a34a;" +"foreground: #ffffff;");
 
         panel.add(txtSearch, "growx");
         panel.add(cmdFilter, "shrinkx, gapx 10");
@@ -206,7 +219,7 @@ public class ProductsView extends JPanel implements ActionListener {
     }
 
     private JComponent addTablePanel() {
-        Object rowData[][] = adjustData(model.fetchProductsFromDatabase()).length == 0
+        Object rowData[][] = adjustData(model.fetchProductsFromDatabase()) == null || model.fetchProductsFromDatabase().length == 0
                 ? new Object[][] { { "", "", "", "", "" } }
                 : adjustData(model.fetchProductsFromDatabase());
         Object columnNames[] = { "Products / Services", "Category", "Rate", "Taxable", "Action" };
@@ -221,55 +234,58 @@ public class ProductsView extends JPanel implements ActionListener {
 
         DefaultTableModel tableModel = new DefaultTableModel(rowData, columnNames);
         table.setModel(tableModel);
+        table.getTableHeader().setReorderingAllowed(false);
+        table.getTableHeader().setResizingAllowed(false);
+        table.setDefaultEditor(Object.class, null);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        table.setDefaultRenderer(String.class, centerRenderer);
 
         table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
-        table.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox()));
         table.getColumnModel().getColumn(0).setPreferredWidth(107);
+        table.getColumnModel().getColumn(3).setCellRenderer(new ImageRenderer());
+
+        table.addMouseListener(this);
+
         scrollPane.setViewportView(table);
+
         return panel;
     }
-
-    @SuppressWarnings("serial")
     class ButtonRenderer extends JButton implements TableCellRenderer {
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
-                int row, int column) {
-            if (value instanceof JButton) {
-                setText(((JButton) value).getText());
-            } else {
-                setText((value == null) ? "" : value.toString());
-            }
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            setText("Manage Product");
+            putClientProperty(FlatClientProperties.STYLE, "" +
+                    "font: -1;" +
+                    "foreground: #16a34a;");
+            //set empty border
+            setBorder(BorderFactory.createEmptyBorder());
+            //add actionlistener based on row index
+
             return this;
         }
     }
 
-    @SuppressWarnings("serial")
-    class ButtonEditor extends DefaultCellEditor {
-        protected JButton button;
-
-        public ButtonEditor(JCheckBox checkBox) {
-            super(checkBox);
-            button = new JButton();
-            button.setOpaque(true);
-            button.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent arg0) {
-                    fireEditingStopped();
-                }
-            });
-        }
-
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row,
-                int column) {
-            button.setText((value == null) ? "" : value.toString());
-            return button;
-        }
-
+    class ImageRenderer extends DefaultTableCellRenderer {
+        JLabel label = new JLabel();
+    
         @Override
-        public Object getCellEditorValue() {
-            return button.getText();
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Object columnValue = table.getModel().getValueAt(row, 3);
+            // Now you can use columnValue
+            if (columnValue instanceof Boolean) {
+                label.setText("");
+                if ((boolean) columnValue) {
+                    label.setIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/verified.png")));
+                } else {
+                    label.setIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/unverified.png")));
+                }
+            }
+            label.setHorizontalAlignment(JLabel.CENTER);
+            return label;
         }
     }
 
-    private void showProductPanel(JComponent component) {
+    private void showLayeredPanel(JComponent component) {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         JPanel glassPane = new JPanel(null);
         frame.setGlassPane(glassPane);
@@ -326,7 +342,7 @@ public class ProductsView extends JPanel implements ActionListener {
         return lbl;
     }
 
-    private JCheckBox formCheckBox(String text) {
+    private JCheckBox newFormCheckBox(String text) {
         JCheckBox chkBox = new JCheckBox(text);
         chkBox.putClientProperty(FlatClientProperties.STYLE, "" +
                 "font: bold +3;");
@@ -339,7 +355,12 @@ public class ProductsView extends JPanel implements ActionListener {
         txtField.putClientProperty(FlatClientProperties.STYLE, "" +
                 "arc: 5;" +
                 "font: +2;");
+        //add client property for red focus
+
         txtField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
+        txtField.putClientProperty(FlatClientProperties.STYLE, "" +
+        "showClearButton:true");
+
         txtField.setText(setText);
         return txtField;
     }
@@ -383,7 +404,7 @@ public class ProductsView extends JPanel implements ActionListener {
         txtSKU = newFormTextField("SKU", "");
         JLabel lblSKU = newFormLabel("SKU");
 
-        chkTaxable = formCheckBox("Taxable");
+        chkTaxable = newFormCheckBox("Taxable");
 
         txtDescription = newFormTextArea("Sales Description","");
         JLabel lblDescription = newFormLabel("Sales Description");
@@ -458,7 +479,7 @@ public class ProductsView extends JPanel implements ActionListener {
         txtSKU = newFormTextField("SKU", data[5].toString());
         JLabel lblSKU = newFormLabel("SKU");
 
-        chkTaxable = formCheckBox("Taxable");
+        chkTaxable = newFormCheckBox("Taxable");
         chkTaxable.setSelected(Boolean.parseBoolean(data[6].toString()));
 
         txtDescription = newFormTextArea("Sales Description", data[2].toString());
@@ -486,7 +507,7 @@ public class ProductsView extends JPanel implements ActionListener {
 
     private JComponent addManageProductControlButtons() {
         JPanel panel = new JPanel(new MigLayout("insets 9 10 9 10", "", ""));
-        
+
         cmdModify = newFormButton("Modify","arc: 5;" +"font: +2;" +"background: #16a34a;" +"foreground: #ffffff;");
         cmdDelete = newFormButton("Delete","arc: 5;" +"font: +2;" +"background: #475569;" +"foreground: #ffffff;");
         cmdCancel = newFormButton("Cancel","arc: 5;" +"font: +2;" +"background: #475569;" +"foreground: #ffffff;");
@@ -497,7 +518,7 @@ public class ProductsView extends JPanel implements ActionListener {
         return panel;
     }
 
-    private boolean sendProductsToDatabase() {
+    private boolean sendAddProductToDatabase() {
         boolean rs;
         try {
             rs = checkInvalidFields() && checkDuplicateFields();
@@ -546,16 +567,12 @@ public class ProductsView extends JPanel implements ActionListener {
             JOptionPane.showMessageDialog(null, "Please fill out all fields");
             // highlight empty fields
             if (txtName.getText().isEmpty()) {
-                txtName.setBorder(BorderFactory.createLineBorder(Color.red));
             }
             if (txtCategory.getText().isEmpty()) {
-                txtCategory.setBorder(BorderFactory.createLineBorder(Color.red));
             }
             if (txtPrice.getText().isEmpty()) {
-                txtPrice.setBorder(BorderFactory.createLineBorder(Color.red));
             }
             if (txtSKU.getText().isEmpty()) {
-                txtSKU.setBorder(BorderFactory.createLineBorder(Color.red));
             }
             return false;
         }
@@ -575,15 +592,15 @@ public class ProductsView extends JPanel implements ActionListener {
             return true;
         }
         for (int i = 0; i < model.fetchProductsFromDatabase().length; i++) {
-            if (model.fetchProductsFromDatabase()[i][0].equals(txtName.getText())) {
+            if (model.fetchProductsFromDatabase()[i][1].equals(txtName.getText())) {
                 JOptionPane.showMessageDialog(null, txtName.getText() + " already exists in the database");
-                txtName.setBorder(BorderFactory.createLineBorder(Color.red));
+                txtName.requestFocus();
                 return false;
             }
-            if (model.fetchProductsFromDatabase()[i][4].equals(txtSKU.getText())) {
+            if (model.fetchProductsFromDatabase()[i][5].equals(txtSKU.getText())) {
                 JOptionPane.showMessageDialog(null,
                         "An item with the SKU " + txtSKU.getText() + " already exists in the database");
-                txtSKU.setBorder(BorderFactory.createLineBorder(Color.red));
+                txtSKU.requestFocus();
                 return false;
             }
         }
@@ -591,30 +608,24 @@ public class ProductsView extends JPanel implements ActionListener {
     }
 
     private boolean checkDuplicateFields(int index) {
-        if (model.fetchProductsFromDatabase() == null || model.fetchProductsFromDatabase().length == 0) {
+        Object[][] arr = model.fetchProductsFromDatabase();
+        if (arr.length == 0) {
             return true;
         }
-        for (int i = 0; i < model.fetchProductsFromDatabase().length; i++) {
+        for (int i = 0; i < arr.length; i++) {
             if (i == index) {
                 continue;
             }
-            if (model.fetchProductsFromDatabase()[i][0].equals(txtName.getText())) {
+            if (arr[i][1].equals(txtName.getText())) {
                 JOptionPane.showMessageDialog(null, txtName.getText() + " already exists in the database");
-                txtName.setBorder(BorderFactory.createLineBorder(Color.red));
                 return false;
             }
-            if (model.fetchProductsFromDatabase()[i][1].equals(txtCategory.getText())) {
-                JOptionPane.showMessageDialog(null, txtCategory.getText() + " already exists in the database");
-                txtCategory.setBorder(BorderFactory.createLineBorder(Color.red));
-                return false;
-            }
-            if (model.fetchProductsFromDatabase()[i][4].equals(txtSKU.getText())) {
+            if (arr[i][5].equals(txtSKU.getText())) {
                 JOptionPane.showMessageDialog(null,
                         "An item with the SKU " + txtSKU.getText() + " already exists in the database");
-                txtSKU.setBorder(BorderFactory.createLineBorder(Color.red));
                 return false;
             }
-            int id = Integer.parseInt(model.fetchProductsFromDatabase()[0].toString());
+            int id = Integer.parseInt(arr[i][0].toString());
             model.setUpdateProduct(id, txtName.getText(), txtDescription.getText(), txtCategory.getText(),
                     Float.parseFloat(txtPrice.getText()), txtSKU.getText(), chkTaxable.isSelected());
         }
