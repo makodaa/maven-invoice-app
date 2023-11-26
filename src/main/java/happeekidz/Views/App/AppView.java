@@ -43,12 +43,7 @@ public class AppView extends JFrame implements ActionListener{
             "Logout"
     };
 
-    /*
-     * AppView Methods
-    */
-
     private void init() {
-        setTitle("Invoice System");
         setSize(new Dimension(1200, 700));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -69,7 +64,7 @@ public class AppView extends JFrame implements ActionListener{
     }
 
     public void logout() {
-        JOptionPane.showMessageDialog(null, "Do you want to logout");
+        JOptionPane.showMessageDialog(null, "Do you want to logout?");
     }
 
     public void showPanel(String strComponent, String strWindow) {
@@ -120,7 +115,6 @@ public class AppView extends JFrame implements ActionListener{
         if (icon != null) {
             item.setIcon(icon);
         }
-        // TODO: add action listener
         item.addActionListener(this);
         panel.add(item);
         panel.revalidate();

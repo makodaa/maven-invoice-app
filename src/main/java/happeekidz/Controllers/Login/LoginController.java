@@ -27,7 +27,6 @@ public class LoginController implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == cmdLogin) {
-            System.out.println("Debugging Moments: cmdLogin clicked");
         String username = view.getUsername();
         String password = view.getPassword();
         boolean Authenticated;
@@ -39,7 +38,9 @@ public class LoginController implements ActionListener{
                 new AppController(new Products(), new AppView());
             }
             else {
-                JOptionPane.showMessageDialog(null, "Access Level Moments: " + model.getAccessLevel(), "Error", JOptionPane.ERROR_MESSAGE);
+                view.dispose();
+                // TODO: Add new interface for non-admins
+                new AppController(new Products(), new AppView());
             }
         } 
         

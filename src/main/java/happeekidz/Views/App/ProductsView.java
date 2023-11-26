@@ -165,6 +165,9 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
                 : getTableDataOf(products.getProducts());
         Object columnNames[] = { "Products / Services", "Category", "Rate", "Taxable", "Action" };
         table.setModel(new DefaultTableModel(rowData, columnNames));
+        if (products.getProducts() != null && products.getProducts().length > 0) {
+            table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
+        }
     }
 
     private JComponent WindowHeader() {
@@ -223,9 +226,12 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         table.setDefaultRenderer(String.class, centerRenderer);
 
-        table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
         table.getColumnModel().getColumn(0).setPreferredWidth(107);
         table.getColumnModel().getColumn(3).setCellRenderer(new ImageRenderer());
+        
+        if (products.getProducts() != null && products.getProducts().length > 0) {
+            table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
+        }
 
         table.addMouseListener(this);
 
@@ -257,9 +263,9 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
             if (columnValue instanceof Boolean) {
                 label.setText("");
                 if ((boolean) columnValue) {
-                    label.setIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/verified.png")));
+                    label.setIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/checked.png")));
                 } else {
-                    label.setIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/unverified.png")));
+                    label.setIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/unchecked.png")));
                 }
             }
             label.setHorizontalAlignment(JLabel.CENTER);
@@ -525,13 +531,13 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
     }
 
     private boolean isProductUpdated(Object[] data, int index) {
-            boolean rs = areFieldsValid() && isEntryUnique(index);
-            if (rs) {
-                int id = Integer.parseInt(data[0].toString());
-                products.setProductToUpdate(id, txtName.getText(), txtDescription.getText(), txtCategory.getText(),
-                        Float.parseFloat(txtPrice.getText()), txtSKU.getText(), chkTaxable.isSelected());
-            }
-            return rs;
+        boolean rs = areFieldsValid() && isEntryUnique(index);
+        if (rs) {
+            int id = Integer.parseInt(data[0].toString());
+            products.setProductToUpdate(id, txtName.getText(), txtDescription.getText(), txtCategory.getText(),
+                    Float.parseFloat(txtPrice.getText()), txtSKU.getText(), chkTaxable.isSelected());
+        }
+        return rs;
     }
 
     private boolean areFieldsValid() {
@@ -573,7 +579,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
             return true;
         }
         for (int i = 0; i < arr.length; i++) {
-            if(arr[i][0].equals(arr[index][0])) {
+            if (arr[i][0].equals(arr[index][0])) {
                 continue;
             }
             if (arr[i][1].equals(txtName.getText())) {

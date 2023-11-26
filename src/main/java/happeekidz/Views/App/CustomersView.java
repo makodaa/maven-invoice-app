@@ -152,7 +152,9 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         : getTableDataOf(customers.getCustomers());
         String[] columnNames = {"Customer Name", "Sum Payment", "Date Started", "Action"};
         table.setModel(new DefaultTableModel(rowdata, columnNames));
-        table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
+        if (customers.getCustomers().length > 0) {
+            table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
+        }
         table.addMouseListener(this);
     }
 
@@ -211,7 +213,7 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         table.setDefaultRenderer(String.class, centerRenderer);
         table.setDefaultRenderer(Object.class, centerRenderer);
 
-        if(rowdata.length > 0){
+        if(customers.getCustomers().length > 0){
             table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
         }
 

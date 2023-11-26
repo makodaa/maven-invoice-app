@@ -53,7 +53,9 @@ public class Customers {
             e.printStackTrace();
         }
     }
-    public void setCustomerToAdd(String firstName, String lastName, String middleName, String address, String email, String phone, LocalDate contractStartDate, LocalDate contractEndDate){
+
+    public void setCustomerToAdd(String firstName, String lastName, String middleName, String address, String email,
+            String phone, LocalDate contractStartDate, LocalDate contractEndDate) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.middleName = middleName;
@@ -65,12 +67,13 @@ public class Customers {
         addCustomer();
     }
 
-    public void setCustomerToRemove(int id){
+    public void setCustomerToRemove(int id) {
         this.id = id;
         removeCustomer();
     }
 
-    public void setCustomerToUpdate(int id, String firstName, String lastName, String middleName, String address, String email, String phone, LocalDate contractStartDate, LocalDate contractEndDate){
+    public void setCustomerToUpdate(int id, String firstName, String lastName, String middleName, String address,
+            String email, String phone, LocalDate contractStartDate, LocalDate contractEndDate) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -111,9 +114,10 @@ public class Customers {
         }
     }
 
-    private void updateCustomer(){
+    private void updateCustomer() {
         try {
-            pst = con.prepareStatement("UPDATE customers SET firstName = ?, lastName = ?, middleName = ?, address = ?, email = ?, phone = ?, contractStartDate = ?, contractEndDate = ? WHERE id = ?");
+            pst = con.prepareStatement(
+                    "UPDATE customers SET firstName = ?, lastName = ?, middleName = ?, address = ?, email = ?, phone = ?, contractStartDate = ?, contractEndDate = ? WHERE id = ?");
             pst.setString(1, firstName);
             pst.setString(2, lastName);
             pst.setString(3, middleName);
@@ -136,7 +140,7 @@ public class Customers {
             rs = pst.executeQuery();
             customers = new ArrayList<>();
             while (rs.next()) {
-                customers.add(new Object[]{
+                customers.add(new Object[] {
                         rs.getInt("id"), // idx: 0
                         rs.getString("firstName"), // idx: 1
                         rs.getString("lastName"), // idx: 2
