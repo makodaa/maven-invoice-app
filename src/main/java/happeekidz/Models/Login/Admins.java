@@ -68,13 +68,22 @@ public class Admins {
             System.out.println(e);
         }
     }
+    public void addUser(String username, String password, String accessLevel) {
+        try {
+            pst = con.prepareStatement("INSERT INTO happeekidz.users (USERS_USERNAME, USERS_PASSWORD, USERS_ACCESS_LEVEL) VALUES (?, ?, ?)");
+            pst.setString(1, username);
+            pst.setString(2, password);
+            pst.setString(3, accessLevel);
+            pst.executeUpdate();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
     public boolean Authenticate(String username, String password) {
         this.username = username;
         this.password = password;
 
         try {
-            pst = con.prepareStatement("INSERT INTO happeekidz.users (USERS_USERNAME, USERS_PASSWORD, USERS_ACCESS_LEVEL) VALUES ('admin', 'admin', 'admin')");
-            pst.executeUpdate();
             pst = con.prepareStatement("SELECT * FROM HAPPEEKIDZ.USERS WHERE USERS_USERNAME = ? AND USERS_PASSWORD = ?");
             pst.setString(1, username);
             pst.setString(2, password);
@@ -103,5 +112,51 @@ public class Admins {
             System.out.println(e);
         }
         return isEmpty;
+    }
+
+    public void addCurrentSession() {
+        try {
+            pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS happeekidz.current_session (ID_SESSION INT NOT NULL AUTO_INCREMENT, SESSION_USERNAME VARCHAR(255) NOT NULL, SESSION_ACCESS_LEVEL VARCHAR(255) NOT NULL, PRIMARY KEY (ID_SESSION))");
+            pst.executeUpdate();
+            pst = con.prepareStatement("INSERT INTO happeekidz.current_session (SESSION_USERNAME, SESSION_ACCESS_LEVEL) VALUES (?, ?)");
+            pst.setString(1, this.username);
+            pst.setString(2, this.accessLevel);
+            pst.executeUpdate();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    public void removeCurrentSession() {
+        try {
+            pst = con.prepareStatement("DELETE FROM happeekidz.current_session");
+            pst.executeUpdate();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+    
+    public void fetchCurrentSession() {
+        try {
+            pst = con.prepareStatement("SELECT * FROM happeekidz.current_session");
+            rs = pst.executeQuery();
+            if (rs.next()) {
+                this.username = rs.getString("SESSION_USERNAME");
+                this.accessLevel = rs.getString("SESSION_ACCESS_LEVEL");
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    public void changePassword(String password) {
+        try {
+            pst = con.prepareStatement("UPDATE happeekidz.users SET USERS_PASSWORD = ? WHERE USERS_USERNAME = ?");
+            pst.setString(1, password);
+            pst.setString(2, this.username);
+            pst.executeUpdate();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
     }
 }

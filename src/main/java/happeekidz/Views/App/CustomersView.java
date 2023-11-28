@@ -463,8 +463,6 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
                 if (invoicesData[j][1].toString().equals(data[i][0].toString())
                         && invoicesData[j][11].toString().equals("Unpaid")) {
                     if (invoicesData[j][9].toString().equals("Discount Percent")) {
-                        System.out.println(invoicesData[j][6].toString() + " " + invoicesData[j][7].toString() + " "
-                                + invoicesData[j][8].toString());
                                 //sum = subtotal - (subtotal * discount)
                         sum += Double.parseDouble(invoicesData[j][6].toString()) - (Double.parseDouble(invoicesData[j][6].toString()) * Double.parseDouble(invoicesData[j][8].toString()));
                     } else {

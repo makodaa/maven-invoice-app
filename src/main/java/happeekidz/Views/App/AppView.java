@@ -13,6 +13,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 
 import happeekidz.Models.App.Customers;
 import happeekidz.Models.App.Products;
+import happeekidz.Models.Login.Admins;
 import happeekidz.Models.App.Invoices;
 import net.miginfocom.swing.MigLayout;
 
@@ -81,6 +82,8 @@ public class AppView extends JFrame implements ActionListener {
     public void logout() {
         if (JOptionPane.showConfirmDialog(null, "Are you sure you want to logout?", "Logout",
                 JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+            Admins admins = new Admins();
+            admins.removeCurrentSession();
             this.dispose();
         }
     }

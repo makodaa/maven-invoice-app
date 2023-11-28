@@ -40,13 +40,11 @@ public class LoginController implements ActionListener {
             Authenticated = model.Authenticate(username, password);
 
             if (Authenticated) {
-                if (model.getAccessLevel().equals("admin")) {
+                    model.removeCurrentSession();
+                    view.dispose();
+                    model.addCurrentSession();
                     view.dispose();
                     new AppController(new Products(), new AppView());
-                } else {
-                    view.dispose();
-                    new AppController(new Products(), new AppView());
-                }
             }
 
             else {
