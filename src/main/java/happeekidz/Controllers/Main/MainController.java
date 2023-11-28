@@ -17,8 +17,7 @@ public class MainController {
     public static void main(String[] args) {
         setLookAndFeel();
         EventQueue.invokeLater(() -> {
-            // new LoginController(new Admins(), new LoginView());
-            new AppView();
+            new LoginController(new Admins(), new LoginView());
         });
     }
 

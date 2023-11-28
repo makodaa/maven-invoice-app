@@ -21,30 +21,28 @@ import com.github.lgooddatepicker.components.DatePicker;
 import com.github.lgooddatepicker.components.DatePickerSettings;
 
 import happeekidz.Models.App.Customers;
+import happeekidz.Models.App.Invoices;
 
 import com.formdev.flatlaf.FlatClientProperties;
 
 public class CustomersView extends JPanel implements ActionListener, MouseListener {
     private JTable table;
-    private JTextField txtFirstName, txtLastName, txtMiddleName, txtAddress,  txtEmail, txtContactNumber;
+    private JTextField txtFirstName, txtLastName, txtMiddleName, txtAddress, txtEmail, txtContactNumber;
     private DatePicker calDateStart, calDateEnd;
     private JButton cmdAdd, cmdCancel, cmdConfirm, cmdBack, cmdExitStack, cmdUpdate, cmdDelete;
     private Customers customers = new Customers();
     int row = 0;
 
-
-    
     @Override
     public void mouseClicked(MouseEvent e) {
         int column = table.getColumnModel().getColumnIndexAtX(e.getX());
-        row    = e.getY()/table.getRowHeight();
+        row = e.getY() / table.getRowHeight();
 
-        System.out.println("Fucking Debugging Moments, row: " + row + " column: " + column);
-
-            if (column == 3) {
-                showLayeredPanel(manageCustomerPanel(customers.getCustomers()[row]));
-            }
+        if (column == 3) {
+            showLayeredPanel(manageCustomerPanel(customers.getCustomers()[row]));
+        }
     }
+
     @Override
     public void mousePressed(MouseEvent e) {
     }
@@ -78,12 +76,13 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         }
         if (e.getSource() == cmdConfirm) {
             if (isCustomerAdded()) {
-            JOptionPane.showMessageDialog(frame, "Customer has been added", "Success", JOptionPane.INFORMATION_MESSAGE);
-            JPanel glassPane = (JPanel) frame.getGlassPane();
-            glassPane.setVisible(false);
-            glassPane.removeAll();
-            updateFrame(frame);
-            updateTable();
+                JOptionPane.showMessageDialog(frame, "Customer has been added", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                JPanel glassPane = (JPanel) frame.getGlassPane();
+                glassPane.setVisible(false);
+                glassPane.removeAll();
+                updateFrame(frame);
+                updateTable();
             }
         }
         if (e.getSource() == cmdBack) {
@@ -99,8 +98,9 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
             updateFrame(frame);
         }
         if (e.getSource() == cmdUpdate) {
-            if(isCustomerUpdated(customers.getCustomers()[row], row)){
-                JOptionPane.showMessageDialog(frame, "Customer has been updated", "Success", JOptionPane.INFORMATION_MESSAGE);
+            if (isCustomerUpdated(customers.getCustomers()[row], row)) {
+                JOptionPane.showMessageDialog(frame, "Customer has been updated", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
                 JPanel glassPane = (JPanel) frame.getGlassPane();
                 glassPane.setVisible(false);
                 glassPane.removeAll();
@@ -112,8 +112,9 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
             int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete this customer?", "Delete",
                     JOptionPane.YES_NO_OPTION);
             if (rs == JOptionPane.YES_OPTION) {
-                if(isCustomerRemoved(Integer.parseInt(customers.getCustomers()[row][0].toString()))){
-                    JOptionPane.showMessageDialog(frame, "Customer has been deleted", "Success", JOptionPane.INFORMATION_MESSAGE);
+                if (isCustomerRemoved(Integer.parseInt(customers.getCustomers()[row][0].toString()))) {
+                    JOptionPane.showMessageDialog(frame, "Customer has been deleted", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
                     JPanel glassPane = (JPanel) frame.getGlassPane();
                     glassPane.setVisible(false);
                     glassPane.removeAll();
@@ -129,9 +130,9 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
     }
 
     public void init() {
-        setBackground(new Color(255, 255, 0));
-        setLayout(new MigLayout("wrap 1, fill, gapx 0, insets 0", "", ""));
+        setLayout(new MigLayout("wrap 1, fill, gapx 0, insets 9 10 9 10", "", ""));
         add(addWindowHeader(), "growx, left");
+        add(addGraphicsPanel(), "growx, growy");
         add(addControlPanel(), "growx, growy");
         add(addTablePanel(), "growx, growy");
     }
@@ -147,10 +148,10 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
     }
 
     private void updateTable() {
-        Object[][] rowdata = customers.getCustomers() == null || customers.getCustomers().length == 0 
-        ? new String[1][4] 
-        : getTableDataOf(customers.getCustomers());
-        String[] columnNames = {"Customer Name", "Sum Payment", "Date Started", "Action"};
+        Object[][] rowdata = customers.getCustomers() == null || customers.getCustomers().length == 0
+                ? new String[1][4]
+                : getTableDataOf(customers.getCustomers());
+        String[] columnNames = { "Customer Name", "Open Balance", "Date Started", "Action" };
         table.setModel(new DefaultTableModel(rowdata, columnNames));
         if (customers.getCustomers().length > 0) {
             table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
@@ -160,46 +161,76 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
 
     private JComponent addWindowHeader() {
         JPanel panel = new JPanel(new MigLayout("insets 0, gapx 0", "", ""));
-        cmdBack = new JButton("Customers");
-        cmdBack.setBorder(new EmptyBorder(9, 10, 9, 10));
-        cmdBack.putClientProperty(FlatClientProperties.STYLE, "" +
+        JLabel lblPanelName = new JLabel("Customers");
+        lblPanelName.setBorder(new EmptyBorder(9, 10, 9, 10));
+        lblPanelName.putClientProperty(FlatClientProperties.STYLE, "" +
                 "font:bold +2;");
-        cmdBack.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/back.png"))
-                .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
-        cmdBack.setBorder(new EmptyBorder(9, 10, 9, 10));
-        cmdBack.addActionListener(this);
-        panel.add(cmdBack, "growx");
+        panel.add(lblPanelName, "growx");
         return panel;
     }
 
     private JComponent addControlPanel() {
-        JPanel panel = new JPanel(new MigLayout("fill, insets 9 10 9 10", "", ""));
-
-        JTextField txtSearch = new JTextField();
-        txtSearch.putClientProperty(FlatClientProperties.STYLE, "" +
-                "arc: 5;" +
-                "font: +2;");
-        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Search for a customer");
-
-        JButton cmdFilter = new JButton("");
-        cmdFilter.setBorder(new EmptyBorder(0, 0, 0, 0));
-        cmdFilter.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/filter.png"))
-                .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
-
-        cmdAdd = newFormButton("Add a Customer","arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
-        panel.add(txtSearch, "growx");
-        panel.add(cmdFilter, "shrinkx, gapx 10");
+        JPanel panel = new JPanel(new MigLayout("fill, insets 0", "", ""));
+        cmdAdd = newFormButton("Add a Customer",
+                "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
         panel.add(cmdAdd, "right");
         return panel;
     }
 
+    private JComponent addGraphicsPanel() {
+        JPanel GraphicsPanel = new JPanel(new MigLayout("wrap 4, fillx, insets 0 , gapx 4", "", ""));
+        int ending_contracts = 0;
+        int terminated_contracts = 0;
+        for (int i = 0; i < customers.getCustomers().length; i++) {
+            // if contract is ending in 30 days or less
+            if (LocalDate.now().plusDays(30).isAfter(LocalDate.parse(customers.getCustomers()[i][8].toString()))
+                    && LocalDate.now().isBefore(LocalDate.parse(customers.getCustomers()[i][8].toString()))) {
+                ending_contracts++;
+            }
+            if (LocalDate.now().isAfter(LocalDate.parse(customers.getCustomers()[i][8].toString()))) {
+                terminated_contracts++;
+            }
+        }
+        GraphicsPanel.add(newInfographicBox("Ending Contracts", "", ending_contracts + "", "clock.png"),
+                "growx");
+        GraphicsPanel.add(newInfographicBox("Terminated Contracts", "", terminated_contracts + "", "expired.png"),
+                "growx");
+        GraphicsPanel.add(
+                newInfographicBox("Total Customers", "", customers.getCustomers().length + "", "customers.png"),
+                "growx");
+        return GraphicsPanel;
+    }
+
+    private JComponent newInfographicBox(String title, String Description, String value, String icon) {
+        JPanel panel = new JPanel(new MigLayout("wrap 2, fillx, insets 12 15 12 15", "", ""));
+        panel.putClientProperty(FlatClientProperties.STYLE, "" +
+                "[light]background:darken(@background,3%);" +
+                "[dark]borderColor:lighten(@background,3%);");
+        panel.setPreferredSize(new Dimension(300, 100));
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        JLabel lblIcon = new JLabel(
+                new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/" + icon))
+                        .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
+        // lblIcon.setIconTextGap(100);
+        JLabel lblDescription = new JLabel(Description);
+        lblDescription.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        JLabel lblValue = new JLabel(value);
+        lblValue.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        panel.add(lblTitle, "growx");
+        panel.add(lblIcon, "dock east, gapright 40");
+        panel.add(lblDescription, "wrap");
+        panel.add(lblValue, "wrap");
+        return panel;
+    }
+
     private JComponent addTablePanel() {
-        Object[][] rowdata = customers.getCustomers() == null || customers.getCustomers().length == 0 
-        ? new String[1][4] 
-        : getTableDataOf(customers.getCustomers());
-        String[] columnNames = {"Customer Name", "Sum Payment", "Date Started", "Action"};
-        
-        JPanel panel = new JPanel(new MigLayout("fill, insets 9 10 9 10", "[grow]", "[grow]"));
+        Object[][] rowdata = customers.getCustomers() == null || customers.getCustomers().length == 0
+                ? new String[1][4]
+                : getTableDataOf(customers.getCustomers());
+        String[] columnNames = { "Customer Name", "Sum Payment", "Date Started", "Action" };
+
+        JPanel panel = new JPanel(new MigLayout("fill, insets 0", "[grow]", "[grow]"));
         JScrollPane scrollPane = new JScrollPane();
         panel.add(scrollPane, "growx, growy");
 
@@ -213,30 +244,30 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         table.setDefaultRenderer(String.class, centerRenderer);
         table.setDefaultRenderer(Object.class, centerRenderer);
 
-        if(customers.getCustomers().length > 0){
+        if (customers.getCustomers().length > 0) {
             table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
         }
 
         table.addMouseListener(this);
-        
+
         scrollPane.setViewportView(table);
         return panel;
     }
-        class ButtonRenderer extends JButton implements TableCellRenderer {
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+
+    class ButtonRenderer extends JButton implements TableCellRenderer {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                int row, int column) {
             setText("Manage Customer");
             putClientProperty(FlatClientProperties.STYLE, "" +
                     "foreground: #16a34a;");
 
             setBorder(BorderFactory.createEmptyBorder());
 
-
             return this;
         }
     }
 
-
-    private void showLayeredPanel(JComponent component) {
+    public void showLayeredPanel(JComponent component) {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         JPanel glassPane = new JPanel(null);
         frame.setGlassPane(glassPane);
@@ -259,18 +290,19 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
             }
         });
     }
-    
-    private JComponent addCustomerPanel() {
+
+    public JComponent addCustomerPanel() {
         JPanel panel = new JPanel(new MigLayout("wrap 1, fillx, insets 0", "", ""));
         panel.setBackground(new Color(240, 240, 240));
         panel.add(addFloatingPanelHeader("Add a Customer"), "growx");
-        panel.add(addInputFieldsPanel(new Object[] {"","","","","","","",LocalDate.now(),LocalDate.now()}), "growx");
+        panel.add(addInputFieldsPanel(new Object[] { "", "", "", "", "", "", "", LocalDate.now(), LocalDate.now() }),
+                "growx");
         panel.add(addNewCustomerControlButtonsPanel(), "right");
         updateComponents(panel);
         return panel;
     }
 
-    private JComponent manageCustomerPanel(Object[] data){
+    private JComponent manageCustomerPanel(Object[] data) {
         JPanel panel = new JPanel(new MigLayout("wrap 1, fillx, insets 0", "", ""));
         panel.setBackground(new Color(240, 240, 240));
         panel.add(addFloatingPanelHeader("Manage Customer"), "growx");
@@ -282,7 +314,7 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
 
     private JComponent addFloatingPanelHeader(String title) {
         JPanel panel = new JPanel(new MigLayout("insets 0", "", ""));
-        cmdExitStack = newFormButton(title,"arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+        cmdExitStack = newFormButton(title, "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
         cmdExitStack.putClientProperty(FlatClientProperties.STYLE, "" +
                 "font:bold +3;");
         cmdExitStack
@@ -352,24 +384,25 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
 
     private JComponent addNewCustomerControlButtonsPanel() {
         JPanel panel = new JPanel(new MigLayout("insets 9 10 9 10", "[][]", ""));
-        cmdCancel = newFormButton("Cancel","arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
-        cmdConfirm = newFormButton("Confirm","arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+        cmdCancel = newFormButton("Cancel", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        cmdConfirm = newFormButton("Confirm",
+                "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
         panel.add(cmdCancel, "right, gapx 0");
         panel.add(cmdConfirm, "right, gapx 0");
 
         return panel;
     }
-    private JComponent addUpdateCustomerControlButtonsPanel(){
+
+    private JComponent addUpdateCustomerControlButtonsPanel() {
         JPanel panel = new JPanel(new MigLayout("insets 9 10 9 10", "[][]", ""));
-        cmdDelete = newFormButton("Delete","arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
-        cmdCancel = newFormButton("Cancel","arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
-        cmdUpdate = newFormButton("Update","arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+        cmdDelete = newFormButton("Delete", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        cmdCancel = newFormButton("Cancel", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        cmdUpdate = newFormButton("Update", "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
         panel.add(cmdDelete, "right, gapx 0");
         panel.add(cmdCancel, "right, gapx 0");
         panel.add(cmdUpdate, "right, gapx 0");
         return panel;
     }
-
 
     private JTextField newFormTextField(String placeholder, String setText) {
         JTextField txtField = new JTextField();
@@ -386,28 +419,6 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         lbl.putClientProperty(FlatClientProperties.STYLE, "" +
                 "font: bold +3;");
         return lbl;
-    }
-
-    private JCheckBox newFormCheckBox(String text) {
-        JCheckBox chkBox = new JCheckBox(text);
-        chkBox.putClientProperty(FlatClientProperties.STYLE, "" +
-                "font: bold +3;");
-        return chkBox;
-    }
-
-    private JTextField newFormTextArea(String placeholder, String setText) {
-        JTextField txtField = new JTextField();
-        txtField.setPreferredSize(new Dimension(0, 200));
-        txtField.putClientProperty(FlatClientProperties.STYLE, "" +
-                "arc: 5;" +
-                "font: +2;");
-
-        txtField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
-        txtField.putClientProperty(FlatClientProperties.STYLE, "" +
-                "showClearButton:true");
-
-        txtField.setText(setText);
-        return txtField;
     }
 
     private JButton newFormButton(String text, String style) {
@@ -427,12 +438,12 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         dateSettings.setAllowEmptyDates(false);
 
         DatePicker datePicker = new DatePicker(dateSettings);
-        //change height of component date text field 
+        // change height of component date text field
         datePicker.getComponentToggleCalendarButton().setPreferredSize(new Dimension(0, 35));
-        //change color of border 
+        // change color of border
         datePicker.getComponentDateTextField().setBorder(BorderFactory.createLineBorder(Color.decode("#cccccc")));
-        //change horizontal margin of date text field
-        datePicker.putClientProperty(FlatClientProperties.STYLE, "" +   
+        // change horizontal margin of date text field
+        datePicker.putClientProperty(FlatClientProperties.STYLE, "" +
                 "arc: 5;" +
                 "font: +2;");
         datePicker.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
@@ -442,70 +453,110 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
 
     private Object[][] getTableDataOf(Object[][] data) {
         Object[][] tableData = new Object[data.length][4];
-        for(int i = 0; i < data.length; i++){
+        for (int i = 0; i < data.length; i++) {
             tableData[i][0] = data[i][1].toString() + " " + data[i][2].toString();
+            // cycle through all invoices and get the sum of all payments for each customer
+            Invoices invoices = new Invoices();
+            Object[][] invoicesData = invoices.getInvoices();
+            double sum = 0;
+            for (int j = 0; j < invoicesData.length; j++) {
+                if (invoicesData[j][1].toString().equals(data[i][0].toString())
+                        && invoicesData[j][11].toString().equals("Unpaid")) {
+                    if (invoicesData[j][9].toString().equals("Discount Percent")) {
+                        System.out.println(invoicesData[j][6].toString() + " " + invoicesData[j][7].toString() + " "
+                                + invoicesData[j][8].toString());
+                                //sum = subtotal - (subtotal * discount)
+                        sum += Double.parseDouble(invoicesData[j][6].toString()) - (Double.parseDouble(invoicesData[j][6].toString()) * Double.parseDouble(invoicesData[j][8].toString()));
+                    } else {
+                    }
+
+                }
+            }
+            tableData[i][1] = sum;
             tableData[i][2] = data[i][7];
         }
         return tableData;
     }
-    //method to check if all fields are filled
-    private boolean areFieldsValid(){
-        if(txtFirstName.getText().isEmpty() || txtLastName.getText().isEmpty() || txtMiddleName.getText().isEmpty() || txtAddress.getText().isEmpty() || txtEmail.getText().isEmpty() || txtContactNumber.getText().isEmpty()){
+
+    // method to check if all fields are filled
+    private boolean areFieldsValid() {
+        if (txtFirstName.getText().isEmpty() || txtLastName.getText().isEmpty() || txtMiddleName.getText().isEmpty()
+                || txtAddress.getText().isEmpty() || txtEmail.getText().isEmpty()
+                || txtContactNumber.getText().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please fill out all fields", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
-        if(calDateStart.getDate().isAfter(calDateEnd.getDate())){
-            JOptionPane.showMessageDialog(this, "Contract start date cannot be after contract end date", "Error", JOptionPane.ERROR_MESSAGE);
+        if (calDateStart.getDate().isAfter(calDateEnd.getDate())) {
+            JOptionPane.showMessageDialog(this, "Contract start date cannot be after contract end date", "Error",
+                    JOptionPane.ERROR_MESSAGE);
             return false;
         }
         return true;
     }
-    private boolean isEntryUnique(){
+
+    private boolean isEntryUnique() {
         Object[][] data = customers.getCustomers();
-        for(int i = 0; i < data.length; i++){
-            if(data[i][1].toString().equals(txtFirstName.getText()) && data[i][2].toString().equals(txtLastName.getText()) && data[i][3].toString().equals(txtMiddleName.getText()) && data[i][4].toString().equals(txtAddress.getText()) && data[i][5].toString().equals(txtEmail.getText()) && data[i][6].toString().equals(txtContactNumber.getText())){
-                JOptionPane.showMessageDialog(this, txtFirstName.getText() + " " + txtLastName + " already exists", "Error", JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
-        }
-        return true;
-    }
-    private boolean isEntryUnique(int id){
-        Object[][] data = customers.getCustomers();
-        for(int i = 0; i < data.length; i++){
-            if(data[i][0].toString().equals(Integer.toString(id))){
-                continue;
-            }
-            if(data[i][1].toString().equals(txtFirstName.getText()) && data[i][2].toString().equals(txtLastName.getText()) && data[i][3].toString().equals(txtMiddleName.getText()) && data[i][4].toString().equals(txtAddress.getText()) && data[i][5].toString().equals(txtEmail.getText()) && data[i][6].toString().equals(txtContactNumber.getText())){
-                JOptionPane.showMessageDialog(this, txtFirstName.getText() + " " + txtLastName + " already exists", "Error", JOptionPane.ERROR_MESSAGE);
+        for (int i = 0; i < data.length; i++) {
+            if (data[i][1].toString().equals(txtFirstName.getText())
+                    && data[i][2].toString().equals(txtLastName.getText())
+                    && data[i][3].toString().equals(txtMiddleName.getText())
+                    && data[i][4].toString().equals(txtAddress.getText())
+                    && data[i][5].toString().equals(txtEmail.getText())
+                    && data[i][6].toString().equals(txtContactNumber.getText())) {
+                JOptionPane.showMessageDialog(this, txtFirstName.getText() + " " + txtLastName + " already exists",
+                        "Error", JOptionPane.ERROR_MESSAGE);
                 return false;
             }
         }
         return true;
     }
 
-    private boolean isCustomerAdded(){
-        if(areFieldsValid() && isEntryUnique()){
-            customers.setCustomerToAdd(txtFirstName.getText(), txtLastName.getText(), txtMiddleName.getText(), txtAddress.getText(), txtEmail.getText(), txtContactNumber.getText(), calDateStart.getDate(), calDateEnd.getDate());
+    private boolean isEntryUnique(int id) {
+        Object[][] data = customers.getCustomers();
+        for (int i = 0; i < data.length; i++) {
+            if (data[i][0].toString().equals(Integer.toString(id))) {
+                continue;
+            }
+            if (data[i][1].toString().equals(txtFirstName.getText())
+                    && data[i][2].toString().equals(txtLastName.getText())
+                    && data[i][3].toString().equals(txtMiddleName.getText())
+                    && data[i][4].toString().equals(txtAddress.getText())
+                    && data[i][5].toString().equals(txtEmail.getText())
+                    && data[i][6].toString().equals(txtContactNumber.getText())) {
+                JOptionPane.showMessageDialog(this, txtFirstName.getText() + " " + txtLastName + " already exists",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isCustomerAdded() {
+        if (areFieldsValid() && isEntryUnique()) {
+            customers.setCustomerToAdd(txtFirstName.getText(), txtLastName.getText(), txtMiddleName.getText(),
+                    txtAddress.getText(), txtEmail.getText(), txtContactNumber.getText(), calDateStart.getDate(),
+                    calDateEnd.getDate());
             return true;
         }
         return false;
     }
 
-    private boolean isCustomerRemoved(int id){
-        if(id != -1){
+    private boolean isCustomerRemoved(int id) {
+        if (id != -1) {
             customers.setCustomerToRemove(id);
             return true;
         }
         return false;
     }
+
     private boolean isCustomerUpdated(Object[] data, int index) {
-        if(areFieldsValid() && isEntryUnique(index)){
-            customers.setCustomerToUpdate(Integer.parseInt(data[0].toString()), txtFirstName.getText(), txtLastName.getText(), txtMiddleName.getText(), txtAddress.getText(), txtEmail.getText(), txtContactNumber.getText(), calDateStart.getDate(), calDateEnd.getDate());
+        if (areFieldsValid() && isEntryUnique(index)) {
+            customers.setCustomerToUpdate(Integer.parseInt(data[0].toString()), txtFirstName.getText(),
+                    txtLastName.getText(), txtMiddleName.getText(), txtAddress.getText(), txtEmail.getText(),
+                    txtContactNumber.getText(), calDateStart.getDate(), calDateEnd.getDate());
             return true;
         }
         return false;
     }
 
 }
-

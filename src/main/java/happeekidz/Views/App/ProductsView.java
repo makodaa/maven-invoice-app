@@ -6,7 +6,6 @@ import javax.swing.border.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,9 +14,9 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.time.LocalDate;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.formdev.flatlaf.json.ParseException;
 
 import happeekidz.Models.App.Products;
 import net.miginfocom.swing.MigLayout;
@@ -48,8 +47,6 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
     public void mouseClicked(MouseEvent e) {
         int column = table.getColumnModel().getColumnIndexAtX(e.getX());
         row = e.getY() / table.getRowHeight();
-
-        System.out.println("Fucking Debugging Moments, row: " + row + " column: " + column);
 
         if (column == 4) {
             showLayeredPanel(manageProductPanel(products.getProducts()[row]));
@@ -142,9 +139,9 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
     }
 
     private void init() {
-        setLayout(new MigLayout("wrap 1, fill, gapx 0, insets 0", "", ""));
-        setBackground(Color.red);
+        setLayout(new MigLayout("wrap 1, fill, gapx 0, insets 9 10 9 10", "", ""));
         add(WindowHeader(), "growx");
+        add(addGraphicsPanel(), "growx");
         add(ControlPanel(), "growx, growy");
         add(addTablePanel(), "growx, growy");
     }
@@ -172,34 +169,48 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
 
     private JComponent WindowHeader() {
         JPanel panel = new JPanel(new MigLayout("insets 0, gapx 0", "", ""));
-        cmdBack = new JButton("Products");
-        cmdBack.putClientProperty(FlatClientProperties.STYLE, "" +
+        JLabel lblPanelName = new JLabel("Products");
+        lblPanelName.putClientProperty(FlatClientProperties.STYLE, "" +
                 "font:bold +3;");
-        cmdBack.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/back.png"))
-                .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
-        cmdBack.setBorder(new EmptyBorder(9, 10, 9, 10));
-        cmdBack.addActionListener(this);
-        panel.add(cmdBack, "growx");
+        lblPanelName.setBorder(new EmptyBorder(9, 10, 9, 10));
+        panel.add(lblPanelName, "growx");
         return panel;
     }
 
     private JComponent ControlPanel() {
         JPanel panel = new JPanel(new MigLayout("fill, insets 9 10 9 10", "", ""));
-        JTextField txtSearch = new JTextField();
-        txtSearch.putClientProperty(FlatClientProperties.STYLE, "" +
-                "arc: 5;" +
-                "font: +2;");
-        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Search for a product");
-        JButton cmdFilter = new JButton("");
-        cmdFilter.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/filter.png"))
-                .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
-        cmdFilter.setBorder(new EmptyBorder(0, 0, 0, 0));
         cmdAdd = newFormButton("Add Product",
                 "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
-
-        panel.add(txtSearch, "growx");
-        panel.add(cmdFilter, "shrinkx, gapx 10");
         panel.add(cmdAdd, "right");
+        return panel;
+    }
+
+        private JComponent addGraphicsPanel() {
+        JPanel GraphicsPanel = new JPanel(new MigLayout("wrap 4, fillx, insets 9 10 9 10, gapx 4", "", ""));
+        GraphicsPanel.add(newInfographicBox("Total Products", "", products.getProducts().length + "", "products.png"), "growx");
+        return GraphicsPanel;
+    }
+
+    private JComponent newInfographicBox(String title, String Description, String value, String icon) {
+        JPanel panel = new JPanel(new MigLayout("wrap 2, fillx, insets 12 15 12 15", "", ""));
+        panel.putClientProperty(FlatClientProperties.STYLE, "" +
+                "[light]background:darken(@background,3%);" +
+                "[dark]borderColor:lighten(@background,3%);");
+        panel.setPreferredSize(new Dimension(300, 100));
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        JLabel lblIcon = new JLabel(
+                new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/" + icon))
+                        .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
+        // lblIcon.setIconTextGap(100);
+        JLabel lblDescription = new JLabel(Description);
+        lblDescription.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        JLabel lblValue = new JLabel(value);
+        lblValue.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        panel.add(lblTitle, "growx");
+        panel.add(lblIcon, "dock east, gapright 40");
+        panel.add(lblDescription, "wrap");
+        panel.add(lblValue, "wrap");
         return panel;
     }
 
@@ -228,7 +239,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
 
         table.getColumnModel().getColumn(0).setPreferredWidth(107);
         table.getColumnModel().getColumn(3).setCellRenderer(new ImageRenderer());
-        
+
         if (products.getProducts() != null && products.getProducts().length > 0) {
             table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
         }
@@ -273,7 +284,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         }
     }
 
-    private void showLayeredPanel(JComponent component) {
+    public void showLayeredPanel(JComponent component) {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         JPanel glassPane = new JPanel(null);
         frame.setGlassPane(glassPane);
@@ -296,7 +307,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         });
     }
 
-    private JComponent addProductPanel() {
+    public JComponent addProductPanel() {
         JPanel panel = new JPanel(new MigLayout("wrap 1, fillx, insets 0", "", ""));
         panel.add(addProductPanelHeader(), "growx");
         panel.add(addProductInputFieldsPanel(), "growx");

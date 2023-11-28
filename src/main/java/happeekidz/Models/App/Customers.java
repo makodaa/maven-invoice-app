@@ -133,6 +133,20 @@ public class Customers {
         }
     }
 
+    public int getNumberOfCustomers() {
+        int numCustomers = 0;
+        try {
+            pst = con.prepareStatement("SELECT COUNT(*) FROM customers");
+            rs = pst.executeQuery();
+            if (rs.next()) {
+                numCustomers = rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return numCustomers;
+    }
+
     public Object[][] getCustomers() {
         List<Object[]> customers = null;
         try {

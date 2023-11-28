@@ -163,6 +163,34 @@ public class Invoices {
             System.out.println(e);
         }
     }
+    
+    public int getNumberOfInvoice() {
+        int numInvoice = 0;
+        try {
+            pst = con.prepareStatement("SELECT COUNT(*) FROM invoices");
+            rs = pst.executeQuery();
+            if (rs.next()) {
+                numInvoice = rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return numInvoice;
+    }
+
+         public int getTotalInvoiceIssued() {
+        int numInvoice = 0;
+        try {
+            pst = con.prepareStatement("SELECT SUM(TOTAL) FROM invoices");
+            rs = pst.executeQuery();
+            if (rs.next()) {
+                numInvoice = rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return numInvoice;
+    }
 
     /*
      * 0: invoice_number

@@ -11,42 +11,62 @@ import happeekidz.Models.Login.Admins;
 import happeekidz.Views.App.AppView;
 import happeekidz.Views.Login.LoginView;
 
-
-public class LoginController implements ActionListener{
+public class LoginController implements ActionListener {
     private Admins model;
     private LoginView view;
-    private JButton cmdLogin;
+    private JButton cmdLogin, cmdSignUp;
 
     public LoginController(Admins model, LoginView view) {
         this.model = model;
         this.view = view;
-        this.cmdLogin = view.getCmdLogin();
-        this.cmdLogin.addActionListener(this);
+        if (view.isVisible() && model.isTableEmpty("users")) {
+            view.add(view.SignUpPanel());
+            this.cmdSignUp = view.getCmdSignUp();
+            this.cmdSignUp.addActionListener(this);
+        } else if (view.isVisible()) {
+            view.add(view.LoginPanel());
+            this.cmdLogin = view.getCmdLogin();
+            this.cmdLogin.addActionListener(this);
+        }
+
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == cmdLogin) {
-        String username = view.getUsername();
-        String password = view.getPassword();
-        boolean Authenticated;
-        Authenticated = model.Authenticate(username, password);
+            String username = view.getUsername();
+            String password = view.getPassword();
+            boolean Authenticated;
+            Authenticated = model.Authenticate(username, password);
 
-        if (Authenticated) {
-            if (model.getAccessLevel().equals("admin")){
-                view.dispose();
-                new AppController(new Products(), new AppView());
+            if (Authenticated) {
+                if (model.getAccessLevel().equals("admin")) {
+                    view.dispose();
+                    new AppController(new Products(), new AppView());
+                } else {
+                    view.dispose();
+                    new AppController(new Products(), new AppView());
+                }
             }
+
             else {
+                JOptionPane.showMessageDialog(null, "Invalid Credentials", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+        if (e.getSource() == view.getCmdSignUp()) {
+            String username = view.getUsername();
+            String password = view.getPassword();
+            if (username.equals("") || password.equals("")) {
+                JOptionPane.showMessageDialog(null, "Please fill up all fields", "Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                model.setUsername(username);
+                model.setPassword(password);
+                model.setAccessLevel("admin");
+                model.addUser();
                 view.dispose();
-                // TODO: Add new interface for non-admins
                 new AppController(new Products(), new AppView());
             }
-        } 
-        
-        else {
-            JOptionPane.showMessageDialog(null, "Invalid Credentials", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+
         }
     }
 }

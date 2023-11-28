@@ -12,6 +12,10 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
 import java.time.LocalDate;
 
 import net.miginfocom.swing.MigLayout;
@@ -29,12 +33,14 @@ import com.github.lgooddatepicker.components.DatePickerSettings;
 import happeekidz.Models.App.Invoices;
 import happeekidz.Models.App.Products;
 import happeekidz.Models.App.Customers;
+import happeekidz.Views.App.AppView;
 
 import happeekidz.Controllers.App.GeneratePdf;
 
 import com.formdev.flatlaf.FlatClientProperties;
 
 public class InvoicesView extends JPanel implements ActionListener, MouseListener, TableModelListener {
+    private AppView appView;
     private JTable table, formTable;
     private JTextField txtNotes, txtEmail, txtDiscount, txtTax, txtPaymentMethod;
     private JComboBox<String> cmbCustomer, cmbDiscount, cmbStatus;
@@ -56,9 +62,6 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         int column = table.getColumnModel().getColumnIndexAtX(e.getX());
         row = e.getY() / table.getRowHeight();
         row = table.rowAtPoint(e.getPoint());
-
-        System.out.println("Fucking Debugging Moments, row: " + row + " column: " + column);
-
         if (column == 5) {
             showLayeredPanel(manageInvoicePanel());
         }
@@ -66,19 +69,16 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
 
     @Override
     public void tableChanged(TableModelEvent e) {
-        int row = e.getFirstRow();
-        int column = e.getColumn();
-        if (column == 3 || column == 4) {
+        int formTableRow = e.getFirstRow();
+        int formTableColumn = e.getColumn();
+        if (formTableColumn == 3 || formTableColumn == 4) {
             try {
-                System.out.println("Debugging Moments, column 3: " + formTable.getValueAt(row, 3));
-                System.out.println("Debugging Moments, column 4: " + formTable.getValueAt(row, 4));
-                int quantity = Integer.parseInt(formTable.getValueAt(row, 3).toString());
-                double rate = Double.parseDouble(formTable.getValueAt(row, 4).toString());
+                int quantity = Integer.parseInt(formTable.getValueAt(formTableRow, 3).toString());
+                double rate = Double.parseDouble(formTable.getValueAt(formTableRow, 4).toString());
 
                 double amount = quantity * rate;
-                formTable.setValueAt(String.format("%.2f", amount), row, 5);
+                formTable.setValueAt(String.format("%.2f", amount), formTableRow, 5);
 
-                System.out.println("Debugging Moments, subtotal: " + subtotal);
                 subtotal = 0;
                 for (int i = 0; i < formTable.getRowCount(); i++) {
                     subtotal += Double.parseDouble(formTable.getValueAt(i, 5).toString());
@@ -88,7 +88,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
                 updateFormTaxDiscountBalanceUI();
                 updateComponents(formTable);
             } catch (NumberFormatException ex) {
-                formTable.setValueAt(formTable.getValueAt(row, 4), row, 5);
+                formTable.setValueAt(formTable.getValueAt(formTableRow, 4), formTableRow, 5);
             }
         }
     }
@@ -98,12 +98,6 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         if (e.getSource() == cmdShowAddStack) {
             showLayeredPanel(addInvoicePanel());
-        }
-        if (e.getSource() == cmdBack) {
-            JPanel panel = (JPanel) cmdBack.getParent().getParent();
-            panel.removeAll();
-            panel.add(new DashboardView(), "grow");
-            updateFrame(frame);
         }
         if (e.getSource() == cmdExitStack) {
             JPanel glassPane = (JPanel) frame.getGlassPane();
@@ -121,14 +115,14 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
             }
         }
         if (e.getSource() == cmdAddRow) {
-            DefaultTableModel model = (DefaultTableModel) formTable.getModel();
+            DefaultTableModel model = (DefaultTableModel) this.formTable.getModel();
             model.addRow(new Object[] { "", "", "", "", "", "", "" });
-            updateComponents(formTable);
+            updateComponents(this.formTable);
         }
         if (e.getSource() == cmdClearRow) {
-            DefaultTableModel model = (DefaultTableModel) formTable.getModel();
+            DefaultTableModel model = (DefaultTableModel) this.formTable.getModel();
             model.setRowCount(0);
-            updateComponents(formTable);
+            updateComponents(this.formTable);
         }
         if (e.getSource() == cmbCustomer) {
             int index = cmbCustomer.getSelectedIndex();
@@ -185,7 +179,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
          * param: invoice_number, customer_id, invoice_date, due_date, payment_date, products, subtotal, tax, discount, discount_type, total, status, payment_method, message
          */
         if (e.getSource() == cmdConfirmModify) {
-            updateComponents(formTable);
+            updateComponents(this.formTable);
             if (areFieldsValid()) {
                 ArrayList<String[]> products = getListOfTableModel();
                 invoices = new Invoices(
@@ -203,6 +197,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
                         cmbStatus.getItemAt(cmbStatus.getSelectedIndex()),
                         txtPaymentMethod.getText(),
                         txtNotes.getText());
+
                 invoices.updateInvoice();
                 updateTable();
                 JPanel glassPane = (JPanel) frame.getGlassPane();
@@ -211,24 +206,27 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
             }
         }
         if (e.getSource() == cmdPrint) {
-            try {
-
-                ArrayList<String[]> products = getListOfTableModel();
-                GeneratePdf pdf = new GeneratePdf(
-                        Integer.parseInt(invoices.getInvoices()[row][0].toString()),
-                        customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString(),
-                        calDateStart.getDate(),
-                        calDateEnd.getDate(),
-                        calDatePaid.getDate(),
-                        products,
-                        subtotal,
-                        Double.parseDouble(txtTax.getText()),
-                        discount,
-                        cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
-                        balance);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+        	 try {
+                 ArrayList<String[]> products = getListOfTableModel();
+                 GeneratePdf pdf = new GeneratePdf(
+                         Integer.parseInt(invoices.getInvoices()[row][0].toString()),
+                         customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString(),
+                         calDateStart.getDate(),
+                         calDateEnd.getDate(),
+                         calDatePaid.getDate(),
+                         products,
+                         subtotal,
+                         Double.parseDouble(txtTax.getText()),
+                         discount,
+                         cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
+                         balance);
+                 pdf.printRecord(pdf);
+                 JPanel glassPane = (JPanel) frame.getGlassPane();
+                 glassPane.setVisible(false);
+                 glassPane.removeAll();
+             } catch (Exception ex) {
+                 ex.printStackTrace();
+             }
         }
     }
 
@@ -237,9 +235,9 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
     }
 
     public void init() {
-        setBackground(new Color(255, 255, 0));
-        setLayout(new MigLayout("wrap 1, fill, gapx 0, insets 0", "", ""));
+        setLayout(new MigLayout("wrap 1, fill, gapx 0, insets 9 10 9 10", "", ""));
         add(addWindowHeader(), "growx, left");
+        add(addGraphicsPanel(), "growx, left");
         add(addControlPanel(), "growx, growy");
         add(addTablePanel(), "growx, growy");
     }
@@ -270,36 +268,67 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
     }
     private JComponent addWindowHeader() {
         JPanel panel = new JPanel(new MigLayout("insets 0, gapx 0", "", ""));
-        cmdBack = new JButton("Invoices & Sales");
-        cmdBack.setBorder(new EmptyBorder(9, 10, 9, 10));
-        cmdBack.putClientProperty(FlatClientProperties.STYLE, "" +
+        JLabel lblPanelName = new JLabel("Invoices");
+        lblPanelName.setBorder(new EmptyBorder(9, 10, 9, 10));
+        lblPanelName.putClientProperty(FlatClientProperties.STYLE, "" +
                 "font:bold +2;");
-        cmdBack.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/back.png"))
-                .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
-        cmdBack.setBorder(new EmptyBorder(9, 10, 9, 10));
-        cmdBack.addActionListener(this);
-        panel.add(cmdBack, "growx");
+        lblPanelName.setBorder(new EmptyBorder(9, 10, 9, 10));
+        panel.add(lblPanelName, "growx");
+        return panel;
+    }
+    private JComponent addGraphicsPanel() {
+        JPanel GraphicsPanel = new JPanel(new MigLayout("wrap 4, fillx, insets 0, gapx 4", "", ""));
+        Object[][] invoices = this.invoices.getInvoices();
+        int unpaidInvoices = 0;
+        int paidInvoices = 0;
+        double amountdue = 0;
+        double amountreceived = 0;
+        for (int i = 0; i < invoices.length; i++) {
+            if (invoices[i][11].toString().equals("Unpaid")) {
+                unpaidInvoices++;
+                amountdue += Double.parseDouble(invoices[i][10].toString());
+            } else {
+                paidInvoices++;
+                amountreceived += Double.parseDouble(invoices[i][10].toString());
+            }
+        }
+        GraphicsPanel.add(newInfographicBox("No. of Unpaid Invoices", "", unpaidInvoices + "",
+                "clock.png"), "growx");
+        GraphicsPanel.add(newInfographicBox("No. of Paid Invoices", "", paidInvoices + "", "checked_black.png"),
+                "growx");
+        GraphicsPanel.add(newInfographicBox("Amount Due", "", amountdue + "", "amount_due.png"), "growx");
+        GraphicsPanel.add(newInfographicBox("Amount Received", "", amountreceived + "", "amount_paid.png"),
+                "growx");
+        return GraphicsPanel;
+    }
+
+    private JComponent newInfographicBox(String title, String Description, String value, String icon) {
+        JPanel panel = new JPanel(new MigLayout("wrap 2, fillx, insets 12 15 12 15", "", ""));
+        panel.putClientProperty(FlatClientProperties.STYLE, "" +
+                "[light]background:darken(@background,3%);" +
+                "[dark]borderColor:lighten(@background,3%);");
+        panel.setPreferredSize(new Dimension(300, 100));
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        JLabel lblIcon = new JLabel(
+                new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/" + icon))
+                        .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
+        // lblIcon.setIconTextGap(100);
+        JLabel lblDescription = new JLabel(Description);
+        lblDescription.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        JLabel lblValue = new JLabel(value);
+        lblValue.putClientProperty(FlatClientProperties.STYLE, "font: bold +1");
+        panel.add(lblTitle, "growx");
+        panel.add(lblIcon, "dock east, gapright 40");
+        panel.add(lblDescription, "wrap");
+        panel.add(lblValue, "wrap");
         return panel;
     }
 
     private JComponent addControlPanel() {
         JPanel panel = new JPanel(new MigLayout("fill, insets 9 10 9 10", "", ""));
-
-        JTextField txtSearch = new JTextField();
-        txtSearch.putClientProperty(FlatClientProperties.STYLE, "" +
-                "arc: 5;" +
-                "font: +2;");
-        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Search for an Invoice");
-
-        JButton cmdFilter = new JButton("");
-        cmdFilter.setBorder(new EmptyBorder(0, 0, 0, 0));
-        cmdFilter.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/happeekidz/assets/icons/filter.png"))
-                .getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
-
         cmdShowAddStack = newFormButton("Add an Invoice",
                 "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
-        panel.add(txtSearch, "growx");
-        panel.add(cmdFilter, "shrinkx, gapx 10");
         panel.add(cmdShowAddStack, "right");
         return panel;
     }
@@ -331,7 +360,6 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         }
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
         panel.add(scrollPane, "growx, growy");
         return panel;
     }
@@ -378,7 +406,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         }
     }
 
-    private void showLayeredPanel(JComponent component) {
+    public void showLayeredPanel(JComponent component) {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         JPanel glassPane = new JPanel(null);
         frame.setGlassPane(glassPane);
@@ -402,7 +430,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         });
     }
 
-    private JComponent addInvoicePanel() {
+    public JComponent addInvoicePanel() {
         JPanel panel = new JPanel(new MigLayout("wrap 1, fillx, insets 0", "", ""));
         panel.setBackground(new Color(240, 240, 240));
         panel.add(addFloatingPanelHeader("Add an Invoice"), "growx");
@@ -578,10 +606,11 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         calDateEnd = newFormDatePicker("Due Date", LocalDate.now());
         JLabel lblStatus = newFormLabel("Status");
         cmbStatus = newFormComboBox(new String[] { "Unpaid", "Paid" });
-        cmbStatus.setSelectedIndex(0);
+        cmbStatus.setSelectedItem(invoices.getInvoices()[row][11].toString());
         cmbStatus.addActionListener(this);
         JLabel lblPaymentMethod = newFormLabel("Payment Method");
         txtPaymentMethod = newFormTextField("Payment Method", "");
+        txtPaymentMethod.setText(invoices.getInvoices()[row][12] == null ? "" : invoices.getInvoices()[row][12].toString());
         JLabel lblDatePaid = newFormLabel("Date Paid");
         calDatePaid = newFormDatePicker("Payment Date", LocalDate.now());
         JLabel lblInvoiceDetails = newFormLabel("Invoice Details");
@@ -616,7 +645,6 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         JComponent formTable = newFormTablePanel( new DefaultTableModel(getFormTableRowModelFrom(invoices.getInvoices()[row][5].toString()), new String[] { "", "PRODUCT/SERVICE", "DESCRIPTION", "QTY", "RATE", "AMOUNT", "" }));
         //fire table data changed
         this.formTable.getModel().addTableModelListener(this);
-
         bottomPanel.add(lblBottomPanelSubtotalTitle, "spanx 2");
         bottomPanel.add(lblBottomPanelSubtotalAmount, "wrap, gapleft 60");
         bottomPanel.add(cmbDiscount, "right");
@@ -667,9 +695,6 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         txtNotes.setText(invoices.getInvoices()[row][12] == null ? "" : invoices.getInvoices()[row][12].toString());
         // modify invoice section end
         // for each column in this.formTable print the value of the column
-        for (int i = 0; i < this.formTable.getColumnCount(); i++) {
-            System.out.println("Other Debugging Moments, column: " + i + " value: " + this.formTable.getValueAt(row, i));
-        }
         computeFormTaxDiscountBalance();
         updateFormTaxDiscountBalanceUI();
         updateComponents(bottomPanel);
@@ -690,6 +715,12 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
     private JComponent addModifyInvoiceControlButtonsPanel() {
         JPanel panel = new JPanel(new MigLayout("insets 9 10 9 10", "[][]", ""));
         cmdPrint = newFormButton("Print", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+//        cmdPrint.addActionListener(new ActionListener() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+//                printRecord(panel);
+//            }
+//        });
         cmdDelete = newFormButton("Delete", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
         cmdCancel = newFormButton("Cancel", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
         cmdConfirmModify = newFormButton("Update", "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
@@ -789,7 +820,6 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         formTable.setShowVerticalLines(true);
         formTable.setShowHorizontalLines(true);
         formTable.setGridColor(Color.decode("#cccccc"));
-        formTable.addMouseListener(this);
         formTable.getTableHeader().setReorderingAllowed(false);
         formTable.getTableHeader().setResizingAllowed(false);
 
@@ -951,7 +981,14 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         for (int i = 0; i < formTable.getRowCount(); i++) {
             String[] row = new String[formTable.getColumnCount()];
             for (int j = 0; j < formTable.getColumnCount(); j++) {
-                row[j] = (String) formTable.getValueAt(i, j);
+                try {
+                	row[j] = formTable.getValueAt(i, j).toString();
+                } catch (ClassCastException e) {
+                	row[j] = (String) formTable.getValueAt(i, j);
+                }
+                catch (NullPointerException e) {
+                	row[j] = (String) formTable.getValueAt(i, j);
+                }
             }
             list.add(row);
         }
