@@ -62,6 +62,7 @@ public class LoginController implements ActionListener {
                 model.setAccessLevel("admin");
                 model.addUser();
                 view.dispose();
+                model.addCurrentSession();
                 new AppController(new Products(), new AppView());
             }
 

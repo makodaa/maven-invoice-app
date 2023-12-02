@@ -15,6 +15,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.time.LocalDate;
+import java.util.ArrayList;
 
 import com.formdev.flatlaf.FlatClientProperties;
 
@@ -35,13 +36,16 @@ import net.miginfocom.swing.MigLayout;
  * - Update Database on Confirmation
 */
 public class ProductsView extends JPanel implements ActionListener, MouseListener {
-    private JTextField txtName, txtCategory, txtPrice, txtSKU, txtDescription;
+    private JTextField txtName, txtCategory, txtPrice, txtSKU, txtDescription, txtSearch;
     private JCheckBox chkTaxable;
-    private JButton cmdAdd, cmdCancel, cmdConfirm, cmdBack, cmdExitStack, cmdModify, cmdDelete;
+    private JButton cmdAdd, cmdCancel, cmdConfirm, cmdExitStack, cmdModify, cmdDelete, cmdSearch;
+    private JComboBox<String> cmbFilter;
     private JTable table;
     private Products products = new Products();
-    private JComponent productPanel;
     private int row = 0;
+
+    private ArrayList<Object[]> filteredProducts = new ArrayList<Object[]>();
+    private ArrayList<Integer> filteredProductsIndexes = new ArrayList<Integer>();
 
     @Override
     public void mouseClicked(MouseEvent e) {
@@ -49,7 +53,15 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         row = e.getY() / table.getRowHeight();
 
         if (column == 4) {
-            showLayeredPanel(manageProductPanel(products.getProducts()[row]));
+            // if txtSearch or cmbFilter is not empty, get index from
+            // filteredProductsIndexes
+            // else get index from row
+            if (filteredProducts.size() > 0) {
+                System.out.println(filteredProductsIndexes.get(row));
+                showLayeredPanel(manageProductPanel(products.getProducts()[filteredProductsIndexes.get(row)]));
+            } else {
+                showLayeredPanel(manageProductPanel(products.getProducts()[row]));
+            }
         }
     }
 
@@ -93,12 +105,7 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
             }
             updateTable();
             updateFrame(frame);
-        }
-        if (e.getSource() == cmdBack) {
-            JPanel panel = (JPanel) cmdBack.getParent().getParent();
-            panel.removeAll();
-            panel.add(new DashboardView(), "grow");
-            updateFrame(frame);
+            updateComponents(cmbFilter);
         }
         if (e.getSource() == cmdExitStack) {
             JPanel glassPane = (JPanel) frame.getGlassPane();
@@ -106,30 +113,110 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
             glassPane.removeAll();
         }
         if (e.getSource() == cmdModify) {
-            if (isProductUpdated(products.getProducts()[row], row)) {
-                JOptionPane.showMessageDialog(frame, "Product has been updated", "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                JPanel glassPane = (JPanel) frame.getGlassPane();
-                glassPane.setVisible(false);
-                glassPane.removeAll();
-                updateTable();
-                updateFrame(frame);
+            // check if filteredProducts is not empty
+            // if not empty, get index from filteredProductsIndexes
+            // else get index from row
+            if (filteredProducts.size() > 0) {
+                if (isProductUpdated(products.getProducts()[filteredProductsIndexes.get(row)], filteredProductsIndexes.get(row))) {
+                    JOptionPane.showMessageDialog(frame, "Product has been updated", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    JPanel glassPane = (JPanel) frame.getGlassPane();
+                    glassPane.setVisible(false);
+                    glassPane.removeAll();
+                    updateTable();
+                    updateFrame(frame);
+                }
+            } else {
+                if (isProductUpdated(products.getProducts()[row], row)) {
+                    JOptionPane.showMessageDialog(frame, "Product has been updated", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    JPanel glassPane = (JPanel) frame.getGlassPane();
+                    glassPane.setVisible(false);
+                    glassPane.removeAll();
+                    updateTable();
+                    updateFrame(frame);
+                }
             }
         }
         if (e.getSource() == cmdDelete) {
             int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete?", "Delete",
                     JOptionPane.YES_NO_OPTION);
             if (rs == JOptionPane.YES_OPTION) {
-                isProductRemoved(products.getProducts()[0]);
-                EventQueue.invokeLater(() -> {
+                if (filteredProducts.size() > 0) {
+                    isProductRemoved(products.getProducts()[filteredProductsIndexes.get(row)]);
+                } else {
+                    isProductRemoved(products.getProducts()[row]);
+                }
                     JPanel glassPane = (JPanel) frame.getGlassPane();
                     glassPane.setVisible(false);
                     glassPane.removeAll();
-                });
                 updateTable();
                 if (products.getProducts().length == 0) {
                     updateFrame(frame);
                 }
+            }
+        }
+        if (e.getSource() == cmdSearch) {
+            /*
+             * 1. get value of cmbFilter
+             * 2. get value of txtSearch
+             * 3. filter products.getProducts() based on cmbFilter
+             * 4. filter products.getProducts() based on txtSearch
+             * 5. get their indexes
+             * 6. add to filteredProducts
+             * 7. updateTable()
+             * 8. if filteredProducts is empty, show "No results found"
+             * 9. if cmbFilter is "All" and txtSearch is empty, don't filter
+             */
+            if (cmbFilter.getSelectedItem() == "All" && txtSearch.getText().isEmpty()) {
+                filteredProducts.clear();
+            }
+            if (cmbFilter.getSelectedItem() == "All" && !txtSearch.getText().isEmpty()) {
+                filteredProducts.clear();
+                for (int i = 0; i < products.getProducts().length; i++) {
+                    if (products.getProducts()[i][1].toString().toLowerCase()
+                            .contains(txtSearch.getText().toLowerCase())) {
+                        filteredProducts.add(products.getProducts()[i]);
+                        filteredProductsIndexes.add(i);
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() != "All" && txtSearch.getText().isEmpty()) {
+                filteredProducts.clear();
+                for (int i = 0; i < products.getProducts().length; i++) {
+                    if (products.getProducts()[i][3].toString().toLowerCase()
+                            .contains(cmbFilter.getSelectedItem().toString().toLowerCase())) {
+                        filteredProducts.add(products.getProducts()[i]);
+                        filteredProductsIndexes.add(i);
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() != "All" && !txtSearch.getText().isEmpty()) {
+                filteredProducts.clear();
+                for (int i = 0; i < products.getProducts().length; i++) {
+                    if (products.getProducts()[i][3].toString().toLowerCase()
+                            .contains(cmbFilter.getSelectedItem().toString().toLowerCase())
+                            && products.getProducts()[i][1].toString().toLowerCase()
+                                    .contains(txtSearch.getText().toLowerCase())) {
+                        filteredProducts.add(products.getProducts()[i]);
+                        filteredProductsIndexes.add(i);
+                    }
+                }
+            }
+            if (filteredProducts.size() == 0) {
+                table.setModel(new DefaultTableModel(getTableDataOf(products.getProducts()),
+                        new Object[] { "Products / Services", "Category", "Rate", "Taxable", "Action" }));
+                table.getColumnModel().getColumn(0).setPreferredWidth(107);
+                table.getColumnModel().getColumn(3).setCellRenderer(new ImageRenderer());
+                table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
+            }
+            if (filteredProducts.size() > 0) {
+                Object rowData[][] = getTableDataOf(filteredProducts.toArray(new Object[filteredProducts.size()][7]));
+                Object columnNames[] = { "Products / Services", "Category", "Rate", "Taxable", "Action" };
+                table.setModel(new DefaultTableModel(rowData, columnNames));
+                table.getColumnModel().getColumn(0).setPreferredWidth(107);
+                table.getColumnModel().getColumn(3).setCellRenderer(new ImageRenderer());
+                table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
             }
         }
     }
@@ -163,6 +250,8 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
         Object columnNames[] = { "Products / Services", "Category", "Rate", "Taxable", "Action" };
         table.setModel(new DefaultTableModel(rowData, columnNames));
         if (products.getProducts() != null && products.getProducts().length > 0) {
+            table.getColumnModel().getColumn(0).setPreferredWidth(107);
+            table.getColumnModel().getColumn(3).setCellRenderer(new ImageRenderer());
             table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
         }
     }
@@ -179,15 +268,50 @@ public class ProductsView extends JPanel implements ActionListener, MouseListene
 
     private JComponent ControlPanel() {
         JPanel panel = new JPanel(new MigLayout("fill, insets 9 10 9 10", "", ""));
+        txtSearch = newFormTextField("Search for a product", "");
+        // cmb filter consist of all index [i][3] of products.getproducts()
+        cmbFilter = new JComboBox<String>();
+        cmbFilter.addItem("All");
+        cmbFilter.setPreferredSize(new Dimension(160, 35));
+        cmbFilter.putClientProperty(FlatClientProperties.STYLE, "" +
+                "arc: 5;" +
+                "font: +2;");
+        for (int i = 0; i < products.getProducts().length; i++) {
+            if (cmbFilter.getItemCount() > 0) {
+                boolean isUnique = true;
+                for (int j = 0; j < cmbFilter.getItemCount(); j++) {
+                    if (products.getProducts()[i][3].toString().equals(cmbFilter.getItemAt(j))) {
+                        isUnique = false;
+                    }
+                }
+                if (isUnique) {
+                    cmbFilter.addItem(products.getProducts()[i][3].toString());
+                }
+            } else {
+                cmbFilter.addItem(products.getProducts()[i][3].toString());
+            }
+        }
+        cmbFilter.setLightWeightPopupEnabled(false);
+
+        cmdSearch = newFormButton("Search", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        cmdSearch.setPreferredSize(new Dimension(0, 0));
+        if (products.getProducts() == null || products.getProducts().length == 0) {
+            cmdSearch.setEnabled(false);
+        }
+
         cmdAdd = newFormButton("Add Product",
                 "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+        panel.add(txtSearch, "growx");
+        panel.add(cmbFilter, "growx 0");
+        panel.add(cmdSearch, "growx 0, left");
         panel.add(cmdAdd, "right");
         return panel;
     }
 
-        private JComponent addGraphicsPanel() {
+    private JComponent addGraphicsPanel() {
         JPanel GraphicsPanel = new JPanel(new MigLayout("wrap 4, fillx, insets 9 10 9 10, gapx 4", "", ""));
-        GraphicsPanel.add(newInfographicBox("Total Products", "", products.getProducts().length + "", "products.png"), "growx");
+        GraphicsPanel.add(newInfographicBox("Total Products", "", products.getProducts().length + "", "products.png"),
+                "growx");
         return GraphicsPanel;
     }
 

@@ -10,6 +10,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.time.LocalDate;
+import java.util.ArrayList;
 
 import net.miginfocom.swing.MigLayout;
 import javax.swing.border.EmptyBorder;
@@ -27,11 +28,14 @@ import com.formdev.flatlaf.FlatClientProperties;
 
 public class CustomersView extends JPanel implements ActionListener, MouseListener {
     private JTable table;
-    private JTextField txtFirstName, txtLastName, txtMiddleName, txtAddress, txtEmail, txtContactNumber;
+    private JTextField txtFirstName, txtLastName, txtMiddleName, txtAddress, txtEmail, txtContactNumber, txtSearch;
     private DatePicker calDateStart, calDateEnd;
-    private JButton cmdAdd, cmdCancel, cmdConfirm, cmdBack, cmdExitStack, cmdUpdate, cmdDelete;
+    private JButton cmdAdd, cmdCancel, cmdConfirm, cmdExitStack, cmdUpdate, cmdDelete, cmdSearch;
     private Customers customers = new Customers();
+    private JComboBox<String> cmbFilter;
     int row = 0;
+    private ArrayList<Object[]> filteredCustomers = new ArrayList<Object[]>();
+    private ArrayList<Integer> filteredCustomerIndexes = new ArrayList<Integer>();
 
     @Override
     public void mouseClicked(MouseEvent e) {
@@ -39,7 +43,11 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
         row = e.getY() / table.getRowHeight();
 
         if (column == 3) {
-            showLayeredPanel(manageCustomerPanel(customers.getCustomers()[row]));
+            if (filteredCustomers.size() > 0) {
+                showLayeredPanel(manageCustomerPanel(customers.getCustomers()[filteredCustomerIndexes.get(row)]));
+            } else {
+                showLayeredPanel(manageCustomerPanel(customers.getCustomers()[row]));
+            }
         }
     }
 
@@ -83,13 +91,8 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
                 glassPane.removeAll();
                 updateFrame(frame);
                 updateTable();
+                updateComponents(cmbFilter);
             }
-        }
-        if (e.getSource() == cmdBack) {
-            JPanel panel = (JPanel) cmdBack.getParent().getParent();
-            panel.removeAll();
-            panel.add(new DashboardView(), "grow");
-            updateFrame(frame);
         }
         if (e.getSource() == cmdExitStack) {
             JPanel glassPane = (JPanel) frame.getGlassPane();
@@ -98,6 +101,21 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
             updateFrame(frame);
         }
         if (e.getSource() == cmdUpdate) {
+            // check if filteredcustomers is not empty
+            // if not empty, get the index of the customer to be updated from the filteredcustomers arraylist
+            // else get the index of the customer from row
+            if (filteredCustomers.size() > 0) {
+                if (isCustomerUpdated(filteredCustomers.get(row), filteredCustomerIndexes.get(row))) {
+                    JOptionPane.showMessageDialog(frame, "Customer has been updated", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    JPanel glassPane = (JPanel) frame.getGlassPane();
+                    glassPane.setVisible(false);
+                    glassPane.removeAll();
+                    updateFrame(frame);
+                    updateTable();
+                    updateComponents(cmbFilter);
+                }
+            } else
             if (isCustomerUpdated(customers.getCustomers()[row], row)) {
                 JOptionPane.showMessageDialog(frame, "Customer has been updated", "Success",
                         JOptionPane.INFORMATION_MESSAGE);
@@ -112,15 +130,131 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
             int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete this customer?", "Delete",
                     JOptionPane.YES_NO_OPTION);
             if (rs == JOptionPane.YES_OPTION) {
-                if (isCustomerRemoved(Integer.parseInt(customers.getCustomers()[row][0].toString()))) {
-                    JOptionPane.showMessageDialog(frame, "Customer has been deleted", "Success",
-                            JOptionPane.INFORMATION_MESSAGE);
-                    JPanel glassPane = (JPanel) frame.getGlassPane();
-                    glassPane.setVisible(false);
-                    glassPane.removeAll();
-                    updateFrame(frame);
-                    updateTable();
+                // check if filteredcustomers is not empty
+                // if not empty, get the index of the customer to be deleted from the
+                // filteredcustomers arraylist
+                // else get the index of the customer from row
+                if (filteredCustomers.size() > 0) {
+                    if (isCustomerRemoved(Integer.parseInt(filteredCustomers.get(row)[0].toString()))) {
+                        JOptionPane.showMessageDialog(frame, "Customer has been deleted", "Success",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        JPanel glassPane = (JPanel) frame.getGlassPane();
+                        glassPane.setVisible(false);
+                        glassPane.removeAll();
+                        updateFrame(frame);
+                        updateTable();
+                        updateComponents(cmbFilter);
+                    }
+                } else {
+                    if (isCustomerRemoved(Integer.parseInt(customers.getCustomers()[row][0].toString()))) {
+                        JOptionPane.showMessageDialog(frame, "Customer has been deleted", "Success",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        JPanel glassPane = (JPanel) frame.getGlassPane();
+                        glassPane.setVisible(false);
+                        glassPane.removeAll();
+                        updateFrame(frame);
+                        updateTable();
+                    }
                 }
+            }
+        }
+        if (e.getSource() == cmdSearch) {
+            if (cmbFilter.getSelectedItem() == "All" && txtSearch.getText().isEmpty()) {
+                filteredCustomers.clear();
+            }
+            if (cmbFilter.getSelectedItem() == "All" && !txtSearch.getText().isEmpty()) {
+                filteredCustomers.clear();
+                for (int i = 0; i < customers.getCustomers().length; i++) {
+                    if (customers.getCustomers()[i][1].toString().toLowerCase()
+                            .contains(txtSearch.getText().toLowerCase())
+                            || customers.getCustomers()[i][2].toString().toLowerCase()
+                                    .contains(txtSearch.getText().toLowerCase())) {
+                        filteredCustomers.add(customers.getCustomers()[i]);
+                        filteredCustomerIndexes.add(i);
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "Active Contracts" && txtSearch.getText().isEmpty()) {
+                filteredCustomers.clear();
+                for (int i = 0; i < customers.getCustomers().length; i++) {
+                    if (LocalDate.now().isBefore(LocalDate.parse(customers.getCustomers()[i][8].toString()))) {
+                        filteredCustomers.add(customers.getCustomers()[i]);
+                        filteredCustomerIndexes.add(i);
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "Active Contracts" && !txtSearch.getText().isEmpty()) {
+                filteredCustomers.clear();
+                for (int i = 0; i < customers.getCustomers().length; i++) {
+                    if (customers.getCustomers()[i][1].toString().toLowerCase()
+                            .contains(txtSearch.getText().toLowerCase())
+                            || customers.getCustomers()[i][2].toString().toLowerCase()
+                                    .contains(txtSearch.getText().toLowerCase())) {
+                        if (LocalDate.now().isBefore(LocalDate.parse(customers.getCustomers()[i][8].toString()))) {
+                            filteredCustomers.add(customers.getCustomers()[i]);
+                            filteredCustomerIndexes.add(i);
+                        }
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "Ending Contracts" && txtSearch.getText().isEmpty()) {
+                filteredCustomers.clear();
+                for (int i = 0; i < customers.getCustomers().length; i++) {
+                    if (LocalDate.now().plusDays(30).isAfter(LocalDate.parse(customers.getCustomers()[i][8].toString()))
+                            && LocalDate.now().isBefore(LocalDate.parse(customers.getCustomers()[i][8].toString()))) {
+                        filteredCustomers.add(customers.getCustomers()[i]);
+                        filteredCustomerIndexes.add(i);
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "Ending Contracts" && !txtSearch.getText().isEmpty()) {
+                filteredCustomers.clear();
+                for (int i = 0; i < customers.getCustomers().length; i++) {
+                    if (customers.getCustomers()[i][1].toString().toLowerCase()
+                            .contains(txtSearch.getText().toLowerCase())
+                            || customers.getCustomers()[i][2].toString().toLowerCase()
+                                    .contains(txtSearch.getText().toLowerCase())) {
+                        if (LocalDate.now().plusDays(30)
+                                .isAfter(LocalDate.parse(customers.getCustomers()[i][8].toString()))
+                                && LocalDate.now()
+                                        .isBefore(LocalDate.parse(customers.getCustomers()[i][8].toString()))) {
+                            filteredCustomers.add(customers.getCustomers()[i]);
+                            filteredCustomerIndexes.add(i);
+                        }
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "Terminated Contracts" && txtSearch.getText().isEmpty()) {
+                filteredCustomers.clear();
+                for (int i = 0; i < customers.getCustomers().length; i++) {
+                    if (LocalDate.now().isAfter(LocalDate.parse(customers.getCustomers()[i][8].toString()))) {
+                        filteredCustomers.add(customers.getCustomers()[i]);
+                        filteredCustomerIndexes.add(i);
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "Terminated Contracts" && !txtSearch.getText().isEmpty()) {
+                filteredCustomers.clear();
+                for (int i = 0; i < customers.getCustomers().length; i++) {
+                    if (customers.getCustomers()[i][1].toString().toLowerCase()
+                            .contains(txtSearch.getText().toLowerCase())
+                            || customers.getCustomers()[i][2].toString().toLowerCase()
+                                    .contains(txtSearch.getText().toLowerCase())) {
+                        if (LocalDate.now().isAfter(LocalDate.parse(customers.getCustomers()[i][8].toString()))) {
+                            filteredCustomers.add(customers.getCustomers()[i]);
+                            filteredCustomerIndexes.add(i);
+                        }
+                    }
+                }
+            }
+            if (filteredCustomers.size() == 0) {
+                table.setModel(new DefaultTableModel(getTableDataOf(customers.getCustomers()),
+                        new String[] { "Customer Name", "Sum Payment", "Date Started", "Action" }));
+                table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
+            } else {
+                table.setModel(new DefaultTableModel(getTableDataOf(filteredCustomers.toArray(new Object[0][0])),
+                        new String[] { "Customer Name", "Sum Payment", "Date Started", "Action" }));
+                table.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
             }
         }
     }
@@ -171,8 +305,29 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
 
     private JComponent addControlPanel() {
         JPanel panel = new JPanel(new MigLayout("fill, insets 0", "", ""));
+        txtSearch = newFormTextField("Search for a customer", "");
+        cmbFilter = new JComboBox<String>();
+        cmbFilter.addItem("All");
+        cmbFilter.addItem("Active Contracts");
+        cmbFilter.addItem("Ending Contracts");
+        cmbFilter.addItem("Terminated Contracts");
+        cmbFilter.setPreferredSize(new Dimension(160, 35));
+        cmbFilter.putClientProperty(FlatClientProperties.STYLE, "" +
+                "arc: 5;" +
+                "font: +2;");
+        cmbFilter.setLightWeightPopupEnabled(false);
+
+        cmdSearch = newFormButton("Search", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        cmdSearch.setPreferredSize(new Dimension(0, 0));
+        if (customers.getCustomers() == null || customers.getCustomers().length == 0) {
+            cmdSearch.setEnabled(false);
+        }
         cmdAdd = newFormButton("Add a Customer",
                 "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+
+        panel.add(txtSearch, "growx");
+        panel.add(cmbFilter, "");
+        panel.add(cmdSearch, "");
         panel.add(cmdAdd, "right");
         return panel;
     }
@@ -463,8 +618,10 @@ public class CustomersView extends JPanel implements ActionListener, MouseListen
                 if (invoicesData[j][1].toString().equals(data[i][0].toString())
                         && invoicesData[j][11].toString().equals("Unpaid")) {
                     if (invoicesData[j][9].toString().equals("Discount Percent")) {
-                                //sum = subtotal - (subtotal * discount)
-                        sum += Double.parseDouble(invoicesData[j][6].toString()) - (Double.parseDouble(invoicesData[j][6].toString()) * Double.parseDouble(invoicesData[j][8].toString()));
+                        // sum = subtotal - (subtotal * discount)
+                        sum += Double.parseDouble(invoicesData[j][6].toString())
+                                - (Double.parseDouble(invoicesData[j][6].toString())
+                                        * Double.parseDouble(invoicesData[j][8].toString()));
                     } else {
                     }
 

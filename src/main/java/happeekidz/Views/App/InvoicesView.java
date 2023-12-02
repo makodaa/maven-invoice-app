@@ -40,13 +40,12 @@ import happeekidz.Controllers.App.GeneratePdf;
 import com.formdev.flatlaf.FlatClientProperties;
 
 public class InvoicesView extends JPanel implements ActionListener, MouseListener, TableModelListener {
-    private AppView appView;
     private JTable table, formTable;
-    private JTextField txtNotes, txtEmail, txtDiscount, txtTax, txtPaymentMethod;
-    private JComboBox<String> cmbCustomer, cmbDiscount, cmbStatus;
+    private JTextField txtNotes, txtEmail, txtDiscount, txtTax, txtPaymentMethod, txtSearch;
+    private JComboBox<String> cmbCustomer, cmbDiscount, cmbStatus, cmbFilter;
     private DatePicker calDateStart, calDateEnd, calDatePaid;
-    private JButton cmdShowAddStack, cmdCancel, cmdConfirmAdd, cmdBack, cmdExitStack, cmdConfirmModify, cmdDelete, cmdAddRow,
-            cmdClearRow, cmdPrint;
+    private JButton cmdShowAddStack, cmdCancel, cmdConfirmAdd, cmdExitStack, cmdConfirmModify, cmdDelete, cmdAddRow,
+            cmdClearRow, cmdPrint, cmdSearch;
     private JLabel lblTopPanelBalanceAmount,
             lblBottomPanelBalanceAmount, lblBottomPanelSubtotalAmount, lblBottomPanelDiscountAmount,
             lblBottomPanelTaxAmount;
@@ -55,6 +54,8 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
     private Customers customers = new Customers();
     private Products products = new Products();
     private Invoices invoices = new Invoices();
+    private ArrayList<Object[]> filteredInvoices = new ArrayList<Object[]>();
+    private ArrayList<Integer> filteredInvoiceIndexes = new ArrayList<Integer>();
 
     @Override
     public void mouseClicked(MouseEvent e) {
@@ -165,25 +166,38 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
             int rs = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete?", "Delete",
                     JOptionPane.YES_NO_OPTION);
             if (rs == JOptionPane.YES_OPTION) {
-                invoices = new Invoices(Integer.parseInt(invoices.getInvoices()[row][0].toString()));
-                invoices.removeInvoice();
-                updateTable();
-                JPanel glassPane = (JPanel) frame.getGlassPane();
-                glassPane.setVisible(false);
-                glassPane.removeAll();
+                // check if filteredInvoices is empty
+                if (filteredInvoices.size() > 0) {
+                    invoices = new Invoices(Integer.parseInt(filteredInvoices.get(row)[0].toString()));
+                    invoices.removeInvoice();
+                    filteredInvoices.remove(row);
+                    filteredInvoiceIndexes.remove(row);
+                    updateTable();
+                    JPanel glassPane = (JPanel) frame.getGlassPane();
+                    glassPane.setVisible(false);
+                    glassPane.removeAll();
+                } else {
+                    invoices = new Invoices(Integer.parseInt(invoices.getInvoices()[row][0].toString()));
+                    invoices.removeInvoice();
+                    updateTable();
+                    JPanel glassPane = (JPanel) frame.getGlassPane();
+                    glassPane.setVisible(false);
+                    glassPane.removeAll();
+                }
             }
         }
         /*
          * creates a new invoice object with the updated values from the form
          * calls update method from invoice object
-         * param: invoice_number, customer_id, invoice_date, due_date, payment_date, products, subtotal, tax, discount, discount_type, total, status, payment_method, message
+         * param: invoice_number, customer_id, invoice_date, due_date, payment_date,
+         * products, subtotal, tax, discount, discount_type, total, status,
+         * payment_method, message
          */
         if (e.getSource() == cmdConfirmModify) {
             updateComponents(this.formTable);
-            if (areFieldsValid()) {
+            if (filteredInvoices.size() > 0) {
                 ArrayList<String[]> products = getListOfTableModel();
-                invoices = new Invoices(
-                        Integer.parseInt(invoices.getInvoices()[row][0].toString()),
+                invoices = new Invoices(Integer.parseInt(filteredInvoices.get(row)[0].toString()),
                         Integer.parseInt(customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString()),
                         calDateStart.getDate(),
                         calDateEnd.getDate(),
@@ -197,7 +211,27 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
                         cmbStatus.getItemAt(cmbStatus.getSelectedIndex()),
                         txtPaymentMethod.getText(),
                         txtNotes.getText());
-
+                invoices.updateInvoice();
+                updateTable();
+                JPanel glassPane = (JPanel) frame.getGlassPane();
+                glassPane.setVisible(false);
+                glassPane.removeAll();
+            } else {
+                ArrayList<String[]> products = getListOfTableModel();
+                invoices = new Invoices(Integer.parseInt(invoices.getInvoices()[row][0].toString()),
+                        Integer.parseInt(customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString()),
+                        calDateStart.getDate(),
+                        calDateEnd.getDate(),
+                        calDatePaid.getDate(),
+                        products,
+                        subtotal,
+                        Double.parseDouble(txtTax.getText()),
+                        discount,
+                        cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
+                        balance,
+                        cmbStatus.getItemAt(cmbStatus.getSelectedIndex()),
+                        txtPaymentMethod.getText(),
+                        txtNotes.getText());
                 invoices.updateInvoice();
                 updateTable();
                 JPanel glassPane = (JPanel) frame.getGlassPane();
@@ -206,27 +240,231 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
             }
         }
         if (e.getSource() == cmdPrint) {
-        	 try {
-                 ArrayList<String[]> products = getListOfTableModel();
-                 GeneratePdf pdf = new GeneratePdf(
-                         Integer.parseInt(invoices.getInvoices()[row][0].toString()),
-                         customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString(),
-                         calDateStart.getDate(),
-                         calDateEnd.getDate(),
-                         calDatePaid.getDate(),
-                         products,
-                         subtotal,
-                         Double.parseDouble(txtTax.getText()),
-                         discount,
-                         cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
-                         balance);
-                 pdf.printRecord(pdf);
-                 JPanel glassPane = (JPanel) frame.getGlassPane();
-                 glassPane.setVisible(false);
-                 glassPane.removeAll();
-             } catch (Exception ex) {
-                 ex.printStackTrace();
-             }
+            // check if filteredInvoices is empty
+            if (filteredInvoices.size() > 0) {
+                try {
+                    ArrayList<String[]> products = getListOfTableModel();
+                    GeneratePdf pdf = new GeneratePdf(
+                            Integer.parseInt(filteredInvoices.get(row)[0].toString()),
+                            customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString(),
+                            calDateStart.getDate(),
+                            calDateEnd.getDate(),
+                            calDatePaid.getDate(),
+                            products,
+                            subtotal,
+                            Double.parseDouble(txtTax.getText()),
+                            discount,
+                            cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
+                            balance);
+                    pdf.printRecord(pdf);
+                    JPanel glassPane = (JPanel) frame.getGlassPane();
+                    glassPane.setVisible(false);
+                    glassPane.removeAll();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                try {
+                    ArrayList<String[]> products = getListOfTableModel();
+                    GeneratePdf pdf = new GeneratePdf(
+                            Integer.parseInt(invoices.getInvoices()[row][0].toString()),
+                            customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString(),
+                            calDateStart.getDate(),
+                            calDateEnd.getDate(),
+                            calDatePaid.getDate(),
+                            products,
+                            subtotal,
+                            Double.parseDouble(txtTax.getText()),
+                            discount,
+                            cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
+                            balance);
+                    pdf.printRecord(pdf);
+                    JPanel glassPane = (JPanel) frame.getGlassPane();
+                    glassPane.setVisible(false);
+                    glassPane.removeAll();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+        if (e.getSource() == cmdSearch) {
+            System.out.println("searching");
+
+            if (cmbFilter.getSelectedItem() == "All Time" && txtSearch.getText().isEmpty()) {
+                filteredInvoices.clear();
+            }
+            if (cmbFilter.getSelectedItem() == "All Time" && !txtSearch.getText().isEmpty()) {
+                filteredInvoices.clear();
+                for (int i = 0; i < invoices.getInvoices().length; i++) {
+                    // if customer first name or last name (from customer id of invoice) contains
+                    // search text, or invoice number contains search text, add to filtered invoices
+                    String name = customers.getCustomers()[Integer.parseInt(invoices.getInvoices()[i][1].toString())
+                            - 1][1].toString().toLowerCase() + " "
+                            + customers.getCustomers()[Integer
+                                    .parseInt(invoices.getInvoices()[i][1].toString()) - 1][2].toString().toLowerCase();
+                    if (name.contains(txtSearch.getText().toLowerCase())
+                            || invoices.getInvoices()[i][0].toString().toLowerCase()
+                                    .contains(txtSearch.getText().toLowerCase())) {
+                        filteredInvoices.add(invoices.getInvoices()[i]);
+                        filteredInvoiceIndexes.add(i);
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "This Week") {
+                filteredInvoices.clear();
+                if (txtSearch.getText().isEmpty()) {
+                    for (int i = 0; i < invoices.getInvoices().length; i++) {
+                        if (LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                .isAfter(LocalDate.now().minusDays(7))
+                                || LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                        .isEqual(LocalDate.now().minusDays(7))) {
+                            filteredInvoices.add(invoices.getInvoices()[i]);
+                            filteredInvoiceIndexes.add(i);
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < invoices.getInvoices().length; i++) {
+                        if (LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                .isAfter(LocalDate.now().minusDays(7))
+                                || LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                        .isEqual(LocalDate.now().minusDays(7))) {
+                            String name = customers.getCustomers()[Integer
+                                    .parseInt(invoices.getInvoices()[i][1].toString()) - 1][1].toString()
+                                    .toLowerCase() + " "
+                                    + customers.getCustomers()[Integer
+                                            .parseInt(invoices.getInvoices()[i][1].toString()) - 1][2].toString()
+                                            .toLowerCase();
+                            if (name.contains(txtSearch.getText().toLowerCase())
+                                    || invoices.getInvoices()[i][0].toString().toLowerCase()
+                                            .contains(txtSearch.getText().toLowerCase())) {
+                                filteredInvoices.add(invoices.getInvoices()[i]);
+                                filteredInvoiceIndexes.add(i);
+                            }
+                        }
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "This Month") {
+                filteredInvoices.clear();
+                if (txtSearch.getText().isEmpty()) {
+                    for (int i = 0; i < invoices.getInvoices().length; i++) {
+                        if (LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                .isAfter(LocalDate.now().minusDays(30))
+                                || LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                        .isEqual(LocalDate.now().minusDays(30))) {
+                            filteredInvoices.add(invoices.getInvoices()[i]);
+                            filteredInvoiceIndexes.add(i);
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < invoices.getInvoices().length; i++) {
+                        if (LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                .isAfter(LocalDate.now().minusDays(30))
+                                || LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                        .isEqual(LocalDate.now().minusDays(30))) {
+                            String name = customers.getCustomers()[Integer
+                                    .parseInt(invoices.getInvoices()[i][1].toString()) - 1][1].toString()
+                                    .toLowerCase() + " "
+                                    + customers.getCustomers()[Integer
+                                            .parseInt(invoices.getInvoices()[i][1].toString()) - 1][2].toString()
+                                            .toLowerCase();
+                            if (name.contains(txtSearch.getText().toLowerCase())
+                                    || invoices.getInvoices()[i][0].toString().toLowerCase()
+                                            .contains(txtSearch.getText().toLowerCase())) {
+                                filteredInvoices.add(invoices.getInvoices()[i]);
+                                filteredInvoiceIndexes.add(i);
+                            }
+                        }
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "Last 30 Days") {
+                filteredInvoices.clear();
+                if (txtSearch.getText().isEmpty()) {
+                    for (int i = 0; i < invoices.getInvoices().length; i++) {
+                        if (LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                .isAfter(LocalDate.now().minusDays(30))
+                                || LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                        .isEqual(LocalDate.now().minusDays(30))) {
+                            filteredInvoices.add(invoices.getInvoices()[i]);
+                            filteredInvoiceIndexes.add(i);
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < invoices.getInvoices().length; i++) {
+                        if (LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                .isAfter(LocalDate.now().minusDays(30))
+                                || LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                        .isEqual(LocalDate.now().minusDays(30))) {
+                            String name = customers.getCustomers()[Integer
+                                    .parseInt(invoices.getInvoices()[i][1].toString()) - 1][1].toString()
+                                    .toLowerCase() + " "
+                                    + customers.getCustomers()[Integer
+                                            .parseInt(invoices.getInvoices()[i][1].toString()) - 1][2].toString()
+                                            .toLowerCase();
+                            if (name.contains(txtSearch.getText().toLowerCase())
+                                    || invoices.getInvoices()[i][0].toString().toLowerCase()
+                                            .contains(txtSearch.getText().toLowerCase())) {
+                                filteredInvoices.add(invoices.getInvoices()[i]);
+                                filteredInvoiceIndexes.add(i);
+                            }
+                        }
+                    }
+                }
+            }
+            if (cmbFilter.getSelectedItem() == "This Year") {
+                filteredInvoices.clear();
+                if (txtSearch.getText().isEmpty()) {
+                    for (int i = 0; i < invoices.getInvoices().length; i++) {
+                        if (LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                .isAfter(LocalDate.now().minusDays(365))
+                                || LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                        .isEqual(LocalDate.now().minusDays(365))) {
+                            filteredInvoices.add(invoices.getInvoices()[i]);
+                            filteredInvoiceIndexes.add(i);
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < invoices.getInvoices().length; i++) {
+                        if (LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                .isAfter(LocalDate.now().minusDays(365))
+                                || LocalDate.parse(invoices.getInvoices()[i][3].toString())
+                                        .isEqual(LocalDate.now().minusDays(365))) {
+                            String name = customers.getCustomers()[Integer
+                                    .parseInt(invoices.getInvoices()[i][1].toString()) - 1][1].toString()
+                                    .toLowerCase() + " "
+                                    + customers.getCustomers()[Integer
+                                            .parseInt(invoices.getInvoices()[i][1].toString()) - 1][2].toString()
+                                            .toLowerCase();
+                            if (name.contains(txtSearch.getText().toLowerCase())
+                                    || invoices.getInvoices()[i][0].toString().toLowerCase()
+                                            .contains(txtSearch.getText().toLowerCase())) {
+                                filteredInvoices.add(invoices.getInvoices()[i]);
+                                filteredInvoiceIndexes.add(i);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (filteredInvoices.size() == 0) {
+                table.setModel(new DefaultTableModel(getTableRowModelFrom(invoices.getInvoices()),
+                        new String[] { "", "NO.", "CUSTOMER", "AMOUNT", "STATUS",
+                                "ACTION" }));
+                updateComponents(table);
+                updateTable();
+            } else {
+                table.setModel(new DefaultTableModel(
+                        getTableRowModelFrom(filteredInvoices.toArray(new Object[filteredInvoices.size()][])),
+                        new String[] { "", "NO.", "CUSTOMER", "AMOUNT", "STATUS",
+                                "ACTION" }));
+                table.getColumnModel().getColumn(0).setPreferredWidth(0);
+                table.getColumnModel().getColumn(1).setMaxWidth(50);
+                if (filteredInvoices.toArray(new Object[filteredInvoices.size()][]).length > 0) {
+                    table.getColumnModel().getColumn(4).setCellRenderer(new ImageRenderer());
+                    table.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer());
+                }
+            }
         }
     }
 
@@ -251,6 +489,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         frame.revalidate();
         frame.repaint();
     }
+
     private void updateTable() {
         Object[][] rowData = invoices.getInvoices() == null || invoices.getInvoices().length == 0
                 ? null
@@ -266,6 +505,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         }
         updateComponents(table);
     }
+
     private JComponent addWindowHeader() {
         JPanel panel = new JPanel(new MigLayout("insets 0, gapx 0", "", ""));
         JLabel lblPanelName = new JLabel("Invoices");
@@ -276,6 +516,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         panel.add(lblPanelName, "growx");
         return panel;
     }
+
     private JComponent addGraphicsPanel() {
         JPanel GraphicsPanel = new JPanel(new MigLayout("wrap 4, fillx, insets 0, gapx 4", "", ""));
         Object[][] invoices = this.invoices.getInvoices();
@@ -327,8 +568,20 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
 
     private JComponent addControlPanel() {
         JPanel panel = new JPanel(new MigLayout("fill, insets 9 10 9 10", "", ""));
+        txtSearch = newFormTextField("Search", "");
+        cmbFilter = newFormComboBox(
+                new String[] { "All Time", "This Week", "This Month", "Last 30 Days", "This Year" });
+        cmbFilter.setPreferredSize(new Dimension(160, 30));
+        cmdSearch = newFormButton("Search", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
+        if (invoices.getInvoices() == null || invoices.getInvoices().length == 0) {
+            cmdSearch.setEnabled(false);
+        }
         cmdShowAddStack = newFormButton("Add an Invoice",
                 "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+
+        panel.add(txtSearch, "growx");
+        panel.add(cmbFilter, "");
+        panel.add(cmdSearch, "");
         panel.add(cmdShowAddStack, "right");
         return panel;
     }
@@ -606,11 +859,9 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         calDateEnd = newFormDatePicker("Due Date", LocalDate.now());
         JLabel lblStatus = newFormLabel("Status");
         cmbStatus = newFormComboBox(new String[] { "Unpaid", "Paid" });
-        cmbStatus.setSelectedItem(invoices.getInvoices()[row][11].toString());
         cmbStatus.addActionListener(this);
         JLabel lblPaymentMethod = newFormLabel("Payment Method");
         txtPaymentMethod = newFormTextField("Payment Method", "");
-        txtPaymentMethod.setText(invoices.getInvoices()[row][12] == null ? "" : invoices.getInvoices()[row][12].toString());
         JLabel lblDatePaid = newFormLabel("Date Paid");
         calDatePaid = newFormDatePicker("Payment Date", LocalDate.now());
         JLabel lblInvoiceDetails = newFormLabel("Invoice Details");
@@ -619,7 +870,6 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         lblBottomPanelSubtotalAmount = newFormLabel("PHP" + String.format("%.2f", subtotal));
         lblBottomPanelSubtotalAmount.setHorizontalAlignment(SwingConstants.RIGHT);
         cmbDiscount = newFormComboBox(new String[] { "Discount Percent", "Discount Value" });
-        cmbDiscount.setSelectedIndex(0);
         cmbDiscount.addActionListener(this);
         txtDiscount = newFormTextField("", String.format("%.2f", discount));
         txtDiscount.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -642,8 +892,10 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         txtNotes = newFormTextArea("This message will show up in the invoice", "");
 
         JPanel bottomPanel = new JPanel(new MigLayout("wrap 3, insets 0", "", ""));
-        JComponent formTable = newFormTablePanel( new DefaultTableModel(getFormTableRowModelFrom(invoices.getInvoices()[row][5].toString()), new String[] { "", "PRODUCT/SERVICE", "DESCRIPTION", "QTY", "RATE", "AMOUNT", "" }));
-        //fire table data changed
+        JComponent formTable = newFormTablePanel(
+                new DefaultTableModel(getFormTableRowModelFrom(invoices.getInvoices()[row][5].toString()),
+                        new String[] { "", "PRODUCT/SERVICE", "DESCRIPTION", "QTY", "RATE", "AMOUNT", "" }));
+        // fire table data changed
         this.formTable.getModel().addTableModelListener(this);
         bottomPanel.add(lblBottomPanelSubtotalTitle, "spanx 2");
         bottomPanel.add(lblBottomPanelSubtotalAmount, "wrap, gapleft 60");
@@ -678,27 +930,56 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         panel.add(bottomPanel, "spanx 2, right, top");
 
         // modify invoice section start
-        int index = 0;
-        for (int i = 0; i < customers.getCustomers().length; i++) {
-            if (customers.getCustomers()[i][0].toString().equals(invoices.getInvoices()[row][1].toString())) {
-                index = i;
-                break;
+        if (filteredInvoices.size() > 0) {
+            int index = 0;
+            for (int i = 0; i < customers.getCustomers().length; i++) {
+                if (customers.getCustomers()[i][0].toString().equals(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][1].toString())) {
+                    index = i;
+                    break;
+                }
             }
+            cmbCustomer.setSelectedIndex(index);
+            calDateStart.setDate(LocalDate.parse(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][2].toString()));
+            calDateEnd.setDate(LocalDate.parse(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][3].toString()));
+            txtEmail.setText((String) customers.getCustomers()[index][5]);
+            System.out.println("tax: " + invoices.getInvoices()[filteredInvoiceIndexes.get(row)][7].toString());
+            txtTax.setText(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][7].toString());
+            System.out.println();
+            txtDiscount.setText(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][8].toString());
+            cmbDiscount.setSelectedItem(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][9].toString());
+            cmbStatus.setSelectedItem(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][10].toString());
+            txtPaymentMethod.setText(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][11] == null ? "" : invoices.getInvoices()[filteredInvoiceIndexes.get(row)][11].toString());
+            txtNotes.setText(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][12] == null ? "" : invoices.getInvoices()[filteredInvoiceIndexes.get(row)][12].toString());
+            computeFormTaxDiscountBalance();
+            updateFormTaxDiscountBalanceUI();
+            updateComponents(bottomPanel);
+            return panel;
+            
         }
-        cmbCustomer.setSelectedIndex(index);
-        calDateStart.setDate(LocalDate.parse(invoices.getInvoices()[row][2].toString()));
-        calDateEnd.setDate(LocalDate.parse(invoices.getInvoices()[row][3].toString()));
-        txtEmail.setText((String) customers.getCustomers()[index][5]);
-        txtTax.setText(invoices.getInvoices()[row][7].toString());
-        txtDiscount.setText(invoices.getInvoices()[row][8].toString());
-        cmbDiscount.setSelectedItem(invoices.getInvoices()[row][9].toString());
-        txtNotes.setText(invoices.getInvoices()[row][12] == null ? "" : invoices.getInvoices()[row][12].toString());
-        // modify invoice section end
-        // for each column in this.formTable print the value of the column
-        computeFormTaxDiscountBalance();
-        updateFormTaxDiscountBalanceUI();
-        updateComponents(bottomPanel);
-        return panel;
+            int index = 0;
+            for (int i = 0; i < customers.getCustomers().length; i++) {
+                if (customers.getCustomers()[i][0].toString().equals(invoices.getInvoices()[row][1].toString())) {
+                    index = i;
+                    break;
+                }
+            }
+            cmbCustomer.setSelectedIndex(index);
+            calDateStart.setDate(LocalDate.parse(invoices.getInvoices()[row][2].toString()));
+            calDateEnd.setDate(LocalDate.parse(invoices.getInvoices()[row][3].toString()));
+            txtEmail.setText((String) customers.getCustomers()[index][5]);
+            txtTax.setText(invoices.getInvoices()[row][7].toString());
+            txtDiscount.setText(invoices.getInvoices()[row][8].toString());
+            cmbDiscount.setSelectedItem(invoices.getInvoices()[row][9].toString());
+            cmbStatus.setSelectedItem(invoices.getInvoices()[row][10].toString());
+            txtPaymentMethod
+                    .setText(invoices.getInvoices()[row][11] == null ? "" : invoices.getInvoices()[row][11].toString());
+            txtNotes.setText(invoices.getInvoices()[row][12] == null ? "" : invoices.getInvoices()[row][12].toString());
+            // modify invoice section end
+            // for each column in this.formTable print the value of the column
+            computeFormTaxDiscountBalance();
+            updateFormTaxDiscountBalanceUI();
+            updateComponents(bottomPanel);
+            return panel;
     }
 
     private JComponent addNewInvoiceControlButtonsPanel() {
@@ -717,7 +998,8 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         cmdPrint = newFormButton("Print", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
         cmdDelete = newFormButton("Delete", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
         cmdCancel = newFormButton("Cancel", "arc: 5;" + "font: +2;" + "background: #475569;" + "foreground: #ffffff;");
-        cmdConfirmModify = newFormButton("Update", "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
+        cmdConfirmModify = newFormButton("Update",
+                "arc: 5;" + "font: +2;" + "background: #16a34a;" + "foreground: #ffffff;");
         panel.add(cmdPrint, "right, gapx 0");
         panel.add(cmdDelete, "right, gapx 0");
         panel.add(cmdCancel, "right, gapx 0");
@@ -976,12 +1258,11 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
             String[] row = new String[formTable.getColumnCount()];
             for (int j = 0; j < formTable.getColumnCount(); j++) {
                 try {
-                	row[j] = formTable.getValueAt(i, j).toString();
+                    row[j] = formTable.getValueAt(i, j).toString();
                 } catch (ClassCastException e) {
-                	row[j] = (String) formTable.getValueAt(i, j);
-                }
-                catch (NullPointerException e) {
-                	row[j] = (String) formTable.getValueAt(i, j);
+                    row[j] = (String) formTable.getValueAt(i, j);
+                } catch (NullPointerException e) {
+                    row[j] = (String) formTable.getValueAt(i, j);
                 }
             }
             list.add(row);
