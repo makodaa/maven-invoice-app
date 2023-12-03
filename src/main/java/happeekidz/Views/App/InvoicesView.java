@@ -18,6 +18,7 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.time.LocalDate;
 
+
 import net.miginfocom.swing.MigLayout;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.TableModelEvent;
@@ -56,6 +57,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
     private Invoices invoices = new Invoices();
     private ArrayList<Object[]> filteredInvoices = new ArrayList<Object[]>();
     private ArrayList<Integer> filteredInvoiceIndexes = new ArrayList<Integer>();
+    
 
     @Override
     public void mouseClicked(MouseEvent e) {
@@ -150,16 +152,20 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
                         calDateEnd.getDate(),
                         products,
                         subtotal,
-                        Double.parseDouble(txtTax.getText()),
                         discount,
+                        Double.parseDouble(txtDiscount.getText()),
                         cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
                         balance,
                         txtNotes.getText());
+                
+                
                 invoices.addInvoice();
                 updateTable();
                 JPanel glassPane = (JPanel) frame.getGlassPane();
                 glassPane.setVisible(false);
                 glassPane.removeAll();
+                
+                
             }
         }
         if (e.getSource() == cmdDelete) {
@@ -193,47 +199,55 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
          * products, subtotal, tax, discount, discount_type, total, status,
          * payment_method, message
          */
+        
         if (e.getSource() == cmdConfirmModify) {
             updateComponents(this.formTable);
             if (filteredInvoices.size() > 0) {
                 ArrayList<String[]> products = getListOfTableModel();
-                invoices = new Invoices(Integer.parseInt(filteredInvoices.get(row)[0].toString()),
-                        Integer.parseInt(customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString()),
-                        calDateStart.getDate(),
-                        calDateEnd.getDate(),
-                        calDatePaid.getDate(),
-                        products,
-                        subtotal,
-                        Double.parseDouble(txtTax.getText()),
-                        discount,
-                        cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
-                        balance,
-                        cmbStatus.getItemAt(cmbStatus.getSelectedIndex()),
-                        txtPaymentMethod.getText(),
-                        txtNotes.getText());
+                invoices = new Invoices(
+                    Integer.parseInt(filteredInvoices.get(row)[0].toString()),
+                    Integer.parseInt(customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString()),
+                    calDateStart.getDate(),
+                    calDateEnd.getDate(),
+                    calDatePaid.getDate(),
+                    products,
+                    subtotal,
+                    Double.parseDouble(txtTax.getText()),
+                    Double.parseDouble(txtDiscount.getText()),
+                    cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
+                    balance,
+                    cmbStatus.getItemAt(cmbStatus.getSelectedIndex()),
+                    txtPaymentMethod.getText(),
+                    txtNotes.getText());
+
                 invoices.updateInvoice();
                 updateTable();
+
                 JPanel glassPane = (JPanel) frame.getGlassPane();
                 glassPane.setVisible(false);
                 glassPane.removeAll();
             } else {
                 ArrayList<String[]> products = getListOfTableModel();
-                invoices = new Invoices(Integer.parseInt(invoices.getInvoices()[row][0].toString()),
-                        Integer.parseInt(customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString()),
-                        calDateStart.getDate(),
-                        calDateEnd.getDate(),
-                        calDatePaid.getDate(),
-                        products,
-                        subtotal,
-                        Double.parseDouble(txtTax.getText()),
-                        discount,
-                        cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
-                        balance,
-                        cmbStatus.getItemAt(cmbStatus.getSelectedIndex()),
-                        txtPaymentMethod.getText(),
-                        txtNotes.getText());
+                invoices = new Invoices(
+                    Integer.parseInt(invoices.getInvoices()[row][0].toString()),
+                    Integer.parseInt(customers.getCustomers()[cmbCustomer.getSelectedIndex()][0].toString()),
+                    calDateStart.getDate(),
+                    calDateEnd.getDate(),
+                    calDatePaid.getDate(),
+                    products,
+                    subtotal,
+                    Double.parseDouble(txtTax.getText()),
+
+                    Double.parseDouble(txtDiscount.getText()),
+                    cmbDiscount.getItemAt(cmbDiscount.getSelectedIndex()),
+                    balance,
+                    cmbStatus.getItemAt(cmbStatus.getSelectedIndex()),
+                    txtPaymentMethod.getText(),
+                    txtNotes.getText());
+
                 invoices.updateInvoice();
                 updateTable();
+
                 JPanel glassPane = (JPanel) frame.getGlassPane();
                 glassPane.setVisible(false);
                 glassPane.removeAll();
@@ -762,10 +776,14 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         JLabel lblBottomPanelSubtotalTitle = newFormLabel("Subtotal");
         lblBottomPanelSubtotalAmount = newFormLabel("PHP" + String.format("%.2f", subtotal));
         lblBottomPanelSubtotalAmount.setHorizontalAlignment(SwingConstants.RIGHT);
+        
+        
 
         cmbDiscount = newFormComboBox(new String[] { "Discount Percent", "Discount Value" });
         cmbDiscount.setSelectedIndex(0);
         cmbDiscount.addActionListener(this);
+        
+        
 
         txtDiscount = newFormTextField("", String.format("%.2f", discount));
         txtDiscount.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -869,8 +887,12 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         JLabel lblBottomPanelSubtotalTitle = newFormLabel("Subtotal");
         lblBottomPanelSubtotalAmount = newFormLabel("PHP" + String.format("%.2f", subtotal));
         lblBottomPanelSubtotalAmount.setHorizontalAlignment(SwingConstants.RIGHT);
+        
+        
         cmbDiscount = newFormComboBox(new String[] { "Discount Percent", "Discount Value" });
         cmbDiscount.addActionListener(this);
+        
+        
         txtDiscount = newFormTextField("", String.format("%.2f", discount));
         txtDiscount.setHorizontalAlignment(SwingConstants.RIGHT);
         txtDiscount.addActionListener(this);
@@ -928,6 +950,10 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
         panel.add(lblNotes, "growx, wrap");
         panel.add(txtNotes, "growx");
         panel.add(bottomPanel, "spanx 2, right, top");
+        
+        
+        
+
 
         // modify invoice section start
         if (filteredInvoices.size() > 0) {
@@ -945,8 +971,8 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
             System.out.println("tax: " + invoices.getInvoices()[filteredInvoiceIndexes.get(row)][7].toString());
             txtTax.setText(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][7].toString());
             System.out.println();
-            txtDiscount.setText(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][8].toString());
-            cmbDiscount.setSelectedItem(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][9].toString());
+            txtDiscount.setText(invoices.getInvoices()[row][8].toString());
+            cmbDiscount.setSelectedItem(invoices.getInvoices()[row][8].toString());  
             cmbStatus.setSelectedItem(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][10].toString());
             txtPaymentMethod.setText(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][11] == null ? "" : invoices.getInvoices()[filteredInvoiceIndexes.get(row)][11].toString());
             txtNotes.setText(invoices.getInvoices()[filteredInvoiceIndexes.get(row)][12] == null ? "" : invoices.getInvoices()[filteredInvoiceIndexes.get(row)][12].toString());
@@ -968,8 +994,8 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
             calDateEnd.setDate(LocalDate.parse(invoices.getInvoices()[row][3].toString()));
             txtEmail.setText((String) customers.getCustomers()[index][5]);
             txtTax.setText(invoices.getInvoices()[row][7].toString());
+            cmbDiscount.setSelectedItem(invoices.getInvoices()[row][9].toString());  
             txtDiscount.setText(invoices.getInvoices()[row][8].toString());
-            cmbDiscount.setSelectedItem(invoices.getInvoices()[row][9].toString());
             cmbStatus.setSelectedItem(invoices.getInvoices()[row][10].toString());
             txtPaymentMethod
                     .setText(invoices.getInvoices()[row][11] == null ? "" : invoices.getInvoices()[row][11].toString());
@@ -1296,7 +1322,7 @@ public class InvoicesView extends JPanel implements ActionListener, MouseListene
             row[4] = data[i][11].toString();
             row[5] = "Manage Invoice";
             tableData[i] = row;
-        }
+        } 
         return tableData;
     }
 
